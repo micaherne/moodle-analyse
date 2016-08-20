@@ -28,7 +28,6 @@ foreach($dom->getElementsByTagName('directory') as $node) {
 // plugin directories
 $exclude[realpath($moodleroot . '/auth/cas/CAS')] = true;
 
-
 $plugintypes = core_component::get_plugin_types();
 foreach ($plugintypes as $type => $dir) {
 
