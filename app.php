@@ -24,6 +24,10 @@ if ($p === false) {
 $script = realpath($moodleroot . substr($uri, 0, $p + 4));
 if (substr($uri, $p + 4, 1) === '/') {
     $_SERVER['PATH_INFO'] = substr($uri, $p + 4);
+    $qs = strpos($_SERVER['PATH_INFO'], '?');
+    if ($qs !== false) {
+        $_SERVER['PATH_INFO'] = substr($_SERVER['PATH_INFO'], 0, $qs);
+    }
 }
 
 

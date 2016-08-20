@@ -146,7 +146,7 @@ foreach ($files as $file) {
 
 function findPhpFiles($dir, &$files, $exclude) {
 
-    mtrace("Checking $dir");
+    echo "Checking $dir\n";
     foreach (new DirectoryIterator($dir) as $fileInfo) {
 
         if ($fileInfo->isDot()) {
@@ -155,7 +155,7 @@ function findPhpFiles($dir, &$files, $exclude) {
 
         $path = realpath($fileInfo->getPathname());
         if (array_key_exists($path, $exclude)) {
-            mtrace("Ignoring $path");
+            echo "Ignoring $path\n";
             continue;
         }
 
@@ -180,7 +180,7 @@ function findPhpFiles($dir, &$files, $exclude) {
             // Ignore files where a class is defined. This is a bit of a
             // rule of thumb, but excludes 20-odd files that all appear
             // to be libraries and not pages.
-            // Not necessary now we have check for config.php
+            // [UPDATE] Not necessary now we have check for config.php
             /* foreach(token_get_all($content) as $token) {
                 if ($token[0] === T_CLASS) {
                     continue 2;
@@ -206,11 +206,4 @@ function setUpGlobals($moodledir) {
     define('CACHE_DISABLE_ALL', true); // This prevents reading of existing caches.
     define('IGNORE_COMPONENT_CACHE', true);
     require_once($CFG->dirroot . '/lib/setup.php');
-    // Minimum required to use core_plugin_manager
-    require_once($CFG->dirroot . '/lib/setuplib.php');
-    require_once($CFG->libdir .'/dmllib.php');          // Database access
-    require_once($CFG->dirroot . '/lib/moodlelib.php');
-    require_once($CFG->dirroot.'/cache/lib.php');
-    spl_autoload_register('core_component::classloader');
-    // $DB = new FakeDb();
 }
