@@ -1,0 +1,10 @@
+{
+    "name": "micaherne/moodle-analyse",
+    "authors": [
+        {
+            "name": "Michael Aherne",
+            "email": "micaherne@blueyonder.co.uk"
+        }
+    ],
+    "require": {}
+}
