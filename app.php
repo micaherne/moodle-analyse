@@ -8,8 +8,7 @@ $p = strpos($uri, '.php');
 // Use index.php as directory index
 if ($p === false) {
     // Check URLs with no filename but query string e.g. /?redirect=0
-    $qs = strpos($uri, '/?');
-    if ($qs !== false) {
+    if (strpos($uri, '/?') !== false) {
         $uri = str_replace('/?', '/index.php?', $uri);
     } else if (substr($uri, -1) === '/') {
         $uri .= 'index.php';
