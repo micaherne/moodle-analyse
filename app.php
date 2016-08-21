@@ -12,13 +12,10 @@ if ($p === false) {
         $uri = str_replace('/?', '/index.php?', $uri);
     } else if (substr($uri, -1) === '/') {
         $uri .= 'index.php';
+    } else {
+        $uri .= '/index.php';
     }
     $p = strpos($uri, '.php');
-}
-
-if ($p === false) {
-    header("401 Not authorised");
-    die;
 }
 
 $script = realpath($moodleroot . substr($uri, 0, $p + 4));

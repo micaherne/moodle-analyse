@@ -111,39 +111,6 @@ file_put_contents(__DIR__ . '/whitelist.json', json_encode($files));
 
 exit;
 
-$controllersdir = __DIR__ . '/controllers';
-
-foreach ($files as $file) {
-    $classfile = $controllersdir . substr($file, strlen($moodleroot));
-    if (!file_exists(dirname($classfile))) {
-        mkdir(dirname($classfile), null, true);
-    }
-    $fullclassname = '\controller' . substr($file, strlen($moodleroot), -4);
-
-    $classnameparts = explode('\\', $fullclassname);
-    $classname = array_pop($classnameparts);
-
-    $namespace = implode('\\', $classnameparts);
-
-    $code = "<?php namespace $namespace;\n    class $classname {";
-    $code .= "\n        public function show() {\n            global \$CFG, \$DB, \$PAGE, \$OUTPUT; ";
-    $code .= "\n            ";
-    foreach(token_get_all(file_get_contents($file)) as $token) {
-        if (is_array($token)) {
-            if ($token[0] === T_OPEN_TAG || $token[0] === T_CLOSE_TAG) {
-                continue;
-            } else {
-                // TODO: This will break heredocs and multiline string literals
-                $code .= str_replace("\n", "\n            ", $token[1]);
-            }
-        } else {
-            $code .= $token;
-        }
-    }
-    $code .= "\n    }\n}";
-    file_put_contents($classfile, $code);
-}
-
 function findPhpFiles($dir, &$files, $exclude) {
 
     echo "Checking $dir\n";
@@ -171,9 +138,13 @@ function findPhpFiles($dir, &$files, $exclude) {
                 continue;
             }
 
+            if (preg_match('/define(.*CLI_SCRIPT.*,.*(true|1))/', $content)) {
+                continue;
+            }
+
             // Ignore files without a require config.php statement.
             // By definition, these are not entry points.
-            if (!preg_match('/require.*config\.php/', $content)) {
+            if (!preg_match('/require.*\bconfig\.php\b/', $content)) {
                 continue;
             }
 
