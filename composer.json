@@ -6,5 +6,13 @@
             "email": "micaherne@blueyonder.co.uk"
         }
     ],
-    "require": {}
+    "require": {
+        "nikic/php-parser": "^2.1"
+    },
+    "autoload": {
+        "psr-4": {
+            "MoodleAnalyse\\": "src//",
+            "controller\\": "controller//"
+        }
+    }
 }

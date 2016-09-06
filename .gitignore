@@ -1,3 +1,5 @@
 /moodle
 /moodledata
+/controller
+/vendor
 whitelist.json
