@@ -1,16 +1,22 @@
 <?php
 
-namespace MoodleAnalyse;
+namespace MoodleAnalyse\Parse;
 
 use PhpParser\Node;
 use PhpParser\PrettyPrinter;
 
+/**
+ * NodeVisitor for PhpParser to rewrite requires etc. to absolute Moodle paths.
+ *
+ */
 class RequireResolverVisitor extends \PhpParser\NodeVisitorAbstract {
 
     private $relativeDir;
+    private $removeConfigIncludes;
 
-    public function __construct($relativeDir = '') {
+    public function __construct($relativeDir = '', $removeConfigIncludes = true) {
         $this->relativeDir = $relativeDir;
+        $this->removeConfigIncludes = $removeConfigIncludes;
         $this->prettyPrinter = new PrettyPrinter\Standard();
     }
 
@@ -22,7 +28,7 @@ class RequireResolverVisitor extends \PhpParser\NodeVisitorAbstract {
             // it if it does. This is hackier, but easier, than trying to work
             // out all the possible combinations of concats.
             $exprcode = $this->prettyPrinter->prettyPrint([$node->expr]);
-            if (preg_match('/\bconfig.php\b/', $exprcode)) {
+            if ($this->removeConfigIncludes && preg_match('/\bconfig.php\b/', $exprcode)) {
                 return false; // Remove the node
             // TODO: We should look for other ways of requiring a file without
             // using $CFG here (e.g. __DIR__, dirname() etc).

@@ -14,12 +14,6 @@ use PhpParser\NodeVisitor\NameResolver;
  */
 class ControllerGenerator {
 
-    private $moodleroot;
-
-    public function __construct($moodleroot) {
-        $this->moodleroot = $moodleroot;
-    }
-
     /**
      * Generate the code for a controller class.
      *
@@ -42,12 +36,12 @@ class ControllerGenerator {
         $stmts = $parser->parse($code);
 
         // Get node for global declarations.
-        $stmts_globals = $parser->parse('<?php global $CFG, $DB, $PAGE, $USER, $SESSION, $OUTPUT;');
+        $stmts_globals = $parser->parse('<?php global $CFG, $DB, $PAGE, $USER, $SESSION, $OUTPUT, $SITE, $COURSE;');
 
         // Converts un-namespaced classes to namespaced.
         $traverser = new NodeTraverser();
         $traverser->addVisitor(new NameResolver()); // we will need resolved names
-        $traverser->addVisitor(new RequireResolverVisitor($pagedir));
+        $traverser->addVisitor(new Parse\RequireResolverVisitor($pagedir));
 
         $stmts = $traverser->traverse($stmts);
 

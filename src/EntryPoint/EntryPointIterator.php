@@ -1,17 +1,71 @@
 <?php
 
-namespace MoodleAnalyse;
+namespace MoodleAnalyse\EntryPoint;
 
-class EntryPoint {
+/**
+ * Iterate through all entry points into Moodle.
+ *
+ * Entry points are either scripts that are directly loaded in the browser
+ * or run on the command-line interface.
+ *
+ * @todo return files as found if not using cache.
+ * @todo convert caching to PSR-6
+ * @todo convert logging to PSR-3
+ */
+class EntryPointIterator implements \Iterator {
 
     private $moodleroot;
+    private $cachefile;
+    private $entryPoints;
+    private $current;
 
-    public function __construct($moodleroot) {
+    public function __construct($moodleroot, $cachefile = null) {
         $this->moodleroot = $moodleroot;
+        $this->cachefile = $cachefile;
         \MoodleAnalyse\Fake\CoreComponent::init($this->moodleroot);
     }
 
+    public function current() {
+        return $this->entryPoints[$this->current];
+    }
+
+    public function key() {
+        return $this->current;
+    }
+
+    public function next() {
+        $this->current++;
+    }
+
+    public function rewind() {
+        $this->entryPoints = $this->findEntryPoints();
+        $this->current = 0;
+    }
+
+    public function valid() {
+        return isset($this->entryPoints[$this->current]);
+    }
+
+    private function readCache() {
+        if (!file_exists($this->cachefile)) {
+            return;
+        }
+        $fileContents = file_get_contents($this->cachefile);
+        if (!$fileContents) {
+            return;
+        }
+        $json = json_decode($fileContents);
+        if (!$json) {
+            return;
+        }
+        return array_keys((array) $json);
+    }
+
     public function findEntryPoints() {
+        if (!empty($this->cachefile) && $cached = $this->readCache()) {
+            return $cached;
+        }
+
         $exclude = $this->excludedDirs();
 
         // Preload with known exceptions
@@ -26,7 +80,11 @@ class EntryPoint {
 
         $this->iterateFiles($this->moodleroot, $files, $exclude);
 
-        return $files;
+        if (!empty($this->cachefile)) {
+            file_put_contents($this->cachefile, json_encode($files));
+        }
+
+        return array_keys($files);
     }
 
     function iterateFiles($dir, &$files, $exclude) {

@@ -5,28 +5,37 @@ require_once __DIR__ . '/vendor/autoload.php';
 $moodleroot = realpath(__DIR__ . '/moodle');
 
 $gen = new \MoodleAnalyse\ControllerGenerator($moodleroot);
-
-// $code = $gen->generate('\\controller\\course\\view', file_get_contents($moodleroot . '/course/view.php'), '/course');
-//$code = $gen->generate('\\controller\\enrol\\lti\\cartridge', file_get_contents($moodleroot . '/enrol/lti/cartridge.php'), '/enrol/lti');
-//file_put_contents(__DIR__ . '/controller/enrol/lti/cartridge.php', $code);
-
-$whitelistfile = __DIR__ . '/whitelist.json';
-if (!file_exists($whitelistfile)) {
-    die("Whitelist file required. Run find-entry-points.php to generate it.");
-}
-$whitelist = (array) json_decode(file_get_contents($whitelistfile));
-
+$entryPoints = new \MoodleAnalyse\EntryPoint\EntryPointIterator($moodleroot, __DIR__ . '/whitelist.json');
 
 $errors = [];
-foreach (array_keys($whitelist) as $absfile) {
+
+$aborts = [];
+
+foreach ($entryPoints as $absfile) {
+
     // This is very Windows-specific
     $base = str_replace($moodleroot, '', $absfile);
+
+    // TODO: Exclude these files somewhere else.
+    if (in_array($base, ['\\admin\\index.php', '\\install.php'])) {
+        continue;
+    }
+
     $controllerFile = '\\controller' . $base;
     $controllerClass = substr($controllerFile, 0, -4);
     $pagedir = str_replace('\\', '/', dirname($base));
     echo "Generating $controllerClass $controllerFile\n";
+
     try {
-        $code = $gen->generate($controllerClass, file_get_contents($absfile), $pagedir);
+        $contents = file_get_contents($absfile);
+
+        // TODO: What do we do about ABORT_AFTER_CONFIG scripts?
+        if (strpos($contents, 'ABORT_AFTER_CONFIG') !== false) {
+            $aborts[] = $base;
+            continue;
+        }
+
+        $code = $gen->generate($controllerClass, $contents, $pagedir);
         $controllerdir = dirname(__DIR__ . $controllerFile);
         if (!file_exists($controllerdir)) {
             mkdir($controllerdir, null, true);
@@ -39,3 +48,4 @@ foreach (array_keys($whitelist) as $absfile) {
 }
 
 print_r($errors);
+print_r($aborts);
