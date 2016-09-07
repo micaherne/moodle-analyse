@@ -13,6 +13,7 @@ class RequireResolverVisitor extends \PhpParser\NodeVisitorAbstract {
 
     private $relativeDir;
     private $removeConfigIncludes;
+    private $inInclude = false;
 
     public function __construct($relativeDir = '', $removeConfigIncludes = true) {
         $this->relativeDir = $relativeDir;
@@ -20,8 +21,28 @@ class RequireResolverVisitor extends \PhpParser\NodeVisitorAbstract {
         $this->prettyPrinter = new PrettyPrinter\Standard();
     }
 
-    public function leaveNode(Node $node) {
+    public function beforeTraverse(array $nodes) {
+        $this->inInclude = false;
+    }
+
+    public function enterNode(Node $node) {
         if ($node instanceof \PhpParser\Node\Expr\Include_) {
+            $this->inInclude = true;
+        }
+    }
+
+    public function leaveNode(Node $node) {
+
+        // Replace __DIR__ with $CFG based absolute dir.
+        if ($this->inInclude && $node instanceof \PhpParser\Node\Scalar\MagicConst\Dir) {
+            $newnode = $this->buildConfigAbsoluteNode($this->relativeDir);
+            return $newnode;
+        }
+
+        if ($node instanceof \PhpParser\Node\Expr\Include_) {
+
+            $this->inInclude = false;
+
             $expr = $node->expr;
 
             // Check if the require has config.php in it *anywhere* and remove
@@ -57,15 +78,19 @@ class RequireResolverVisitor extends \PhpParser\NodeVisitorAbstract {
         }
     }
 
-    private function buildRequireNode($relativePath, $includeType) {
-        $relativeToRootPath = $this->relativeDir . '/' . $relativePath;
-        $expr = new \PhpParser\Node\Expr\BinaryOp\Concat(
+    public function buildConfigAbsoluteNode($relativeToRootPath) {
+        return new \PhpParser\Node\Expr\BinaryOp\Concat(
             new \PhpParser\Node\Expr\PropertyFetch(
                  new \PhpParser\Node\Expr\Variable('CFG'),
                  'dirroot'
             ),
             new \PhpParser\Node\Scalar\String_($relativeToRootPath)
         );
+    }
+
+    private function buildRequireNode($relativePath, $includeType) {
+        $relativeToRootPath = $this->relativeDir . '/' . $relativePath;
+        $expr = $this->buildConfigAbsoluteNode($relativeToRootPath);
         return new \PhpParser\Node\Expr\Include_($expr, $includeType);
     }
 

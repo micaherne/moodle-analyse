@@ -42,7 +42,7 @@ foreach ($entryPoints as $absfile) {
         }
         file_put_contents(__DIR__ . $controllerFile, $code);
     } catch (\Exception $e) {
-        $errors[] = $absfile;
+        $errors[$absfile] = $e->getMessage();
     }
 
 }
