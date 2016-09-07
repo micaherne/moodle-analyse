@@ -1,6 +1,6 @@
 <?php
 
-namespace MoodleAnalyse;
+namespace MoodleAnalyse\SimpleMvc;
 
 class Router {
 

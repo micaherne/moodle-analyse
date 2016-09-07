@@ -4,7 +4,7 @@ require_once __DIR__ . '/vendor/autoload.php';
 
 $moodleroot = realpath(__DIR__ . '/moodle');
 
-$gen = new \MoodleAnalyse\ControllerGenerator($moodleroot);
+$gen = new \MoodleAnalyse\SimpleMvc\ControllerGenerator($moodleroot);
 $entryPoints = new \MoodleAnalyse\EntryPoint\EntryPointIterator($moodleroot, __DIR__ . '/whitelist.json');
 
 $errors = [];

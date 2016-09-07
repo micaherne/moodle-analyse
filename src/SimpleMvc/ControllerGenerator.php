@@ -1,6 +1,6 @@
 <?php
 
-namespace MoodleAnalyse;
+namespace MoodleAnalyse\SimpleMvc;
 
 use PhpParser\ParserFactory;
 use PhpParser\BuilderFactory;
@@ -41,7 +41,7 @@ class ControllerGenerator {
         // Converts un-namespaced classes to namespaced.
         $traverser = new NodeTraverser();
         $traverser->addVisitor(new NameResolver()); // we will need resolved names
-        $traverser->addVisitor(new Parse\RequireResolverVisitor($pagedir));
+        $traverser->addVisitor(new \MoodleAnalyse\Parse\RequireResolverVisitor($pagedir));
 
         $stmts = $traverser->traverse($stmts);
 
