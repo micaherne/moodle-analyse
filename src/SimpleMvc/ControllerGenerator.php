@@ -36,7 +36,7 @@ class ControllerGenerator {
         $stmts = $parser->parse($code);
 
         // Get node for global declarations.
-        $stmts_globals = $parser->parse('<?php global $CFG, $DB, $PAGE, $USER, $SESSION, $OUTPUT, $SITE, $COURSE;');
+        $stmts_globals = $parser->parse('<?php global $CFG, $DB, $PAGE, $USER, $SESSION, $OUTPUT, $SITE, $COURSE, $FULLME;');
 
         // Converts un-namespaced classes to namespaced.
         $traverser = new NodeTraverser();
