@@ -10,6 +10,7 @@ $entryPoints = new \MoodleAnalyse\EntryPoint\EntryPointIterator($moodleroot, __D
 $errors = [];
 
 $aborts = [];
+$ajax = [];
 
 foreach ($entryPoints as $absfile) {
 
@@ -35,6 +36,11 @@ foreach ($entryPoints as $absfile) {
             continue;
         }
 
+        if (strpos($contents, 'AJAX_SCRIPT') !== false) {
+            $ajax[] = $base;
+            //continue;
+        }
+
         $code = $gen->generate($controllerClass, $contents, $pagedir);
         $controllerdir = dirname(__DIR__ . $controllerFile);
         if (!file_exists($controllerdir)) {
@@ -49,3 +55,4 @@ foreach ($entryPoints as $absfile) {
 
 print_r($errors);
 print_r($aborts);
+print_r($ajax);

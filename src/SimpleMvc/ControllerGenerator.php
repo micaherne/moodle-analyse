@@ -36,22 +36,39 @@ class ControllerGenerator {
         $stmts = $parser->parse($code);
 
         // Get node for global declarations.
-        $stmts_globals = $parser->parse('<?php global $CFG, $DB, $PAGE, $USER, $SESSION, $OUTPUT, $SITE, $COURSE, $FULLME;');
+        $stmts_globals = $parser->parse('<?php global $CFG, $DB, $PAGE, $USER, $SESSION, $OUTPUT, $SITE, $COURSE, $ME, $FULLME, $FULLSCRIPT, $SCRIPT, $PERF, $ACCESSLIB_PRIVATE;');
 
         // Converts un-namespaced classes to namespaced.
         $traverser = new NodeTraverser();
         $traverser->addVisitor(new NameResolver()); // we will need resolved names
-        $traverser->addVisitor(new \MoodleAnalyse\Parse\RequireResolverVisitor($pagedir));
+
+        $requireResolver = new \MoodleAnalyse\Parse\RequireResolverVisitor($pagedir);
+        $requireResolver->setReplaceConfig(
+            function($node) {
+                return [new \PhpParser\Node\Expr\MethodCall(
+                    new \PhpParser\Node\Expr\Variable('moodleConfig'),
+                    "init"
+                )];
+            }
+        );
+        $traverser->addVisitor($requireResolver);
+
+        // hoist functions to top
+        $extractFunctions = new \MoodleAnalyse\Parse\ExtractFunctionsVisitor();
+        $traverser->addVisitor($extractFunctions);
 
         $stmts = $traverser->traverse($stmts);
 
         // Build tree for code generation.
         $factory = new BuilderFactory();
         $node = $factory->namespace($namespace)
+            ->addStmt($factory->use('\MoodleAnalyse\SimpleMvc\MoodleConfig'))
             ->addStmt($factory->class($straightClassName)
                 ->addStmt($factory->method('run')
                     ->makePublic()
+                    ->addParam($factory->param('moodleConfig')->setTypeHint('MoodleConfig'))
                     ->addStmts($stmts_globals)
+                    ->addStmts($extractFunctions->functions)
                     ->addStmts($stmts)
                   )
               )

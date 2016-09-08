@@ -43,13 +43,13 @@ class Router {
 
         if (class_exists($controllerClass)) {
             if (is_null($this->configfile)) {
-                require_once $this->moodleroot . '/config.php';
+                $moodleConfig = new MoodleConfig($this->moodleroot . '/config.php');
             } else {
-                require_once $this->configfile;
+                $moodleConfig = new MoodleConfig($this->configfile);
             }
 
             $controller = new $controllerClass();
-            $controller->run();
+            $controller->run($moodleConfig);
             exit;
         }
 

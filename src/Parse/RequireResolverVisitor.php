@@ -14,11 +14,19 @@ class RequireResolverVisitor extends \PhpParser\NodeVisitorAbstract {
     private $relativeDir;
     private $removeConfigIncludes;
     private $inInclude = false;
+    private $replaceConfigCallable;
 
     public function __construct($relativeDir = '', $removeConfigIncludes = true) {
         $this->relativeDir = $relativeDir;
         $this->removeConfigIncludes = $removeConfigIncludes;
         $this->prettyPrinter = new PrettyPrinter\Standard();
+        $this->replaceConfigCallable = function($node) {
+            return false;
+        };
+    }
+
+    public function setReplaceConfig(callable $callable) {
+        $this->replaceConfigCallable = $callable;
     }
 
     public function beforeTraverse(array $nodes) {
@@ -50,7 +58,8 @@ class RequireResolverVisitor extends \PhpParser\NodeVisitorAbstract {
             // out all the possible combinations of concats.
             $exprcode = $this->prettyPrinter->prettyPrint([$node->expr]);
             if ($this->removeConfigIncludes && preg_match('/\bconfig.php\b/', $exprcode)) {
-                return false; // Remove the node
+                //return false; // Remove the node
+                return call_user_func($this->replaceConfigCallable, $node);
             // TODO: We should look for other ways of requiring a file without
             // using $CFG here (e.g. __DIR__, dirname() etc).
             } else if ($expr instanceof \PhpParser\Node\Scalar\String_) {
