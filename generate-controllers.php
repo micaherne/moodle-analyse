@@ -8,7 +8,6 @@ $gen = new \MoodleAnalyse\SimpleMvc\ControllerGenerator($moodleroot);
 $entryPoints = new \MoodleAnalyse\EntryPoint\EntryPointIterator($moodleroot, __DIR__ . '/whitelist.json');
 
 $errors = [];
-
 $aborts = [];
 $ajax = [];
 
@@ -30,12 +29,13 @@ foreach ($entryPoints as $absfile) {
     try {
         $contents = file_get_contents($absfile);
 
-        // TODO: What do we do about ABORT_AFTER_CONFIG scripts?
+        // ABORT_AFTER_CONFIG scripts should also work.
         if (strpos($contents, 'ABORT_AFTER_CONFIG') !== false) {
             $aborts[] = $base;
-            continue;
+            //continue;
         }
 
+        // AJAX_SCRIPTs work now.
         if (strpos($contents, 'AJAX_SCRIPT') !== false) {
             $ajax[] = $base;
             //continue;

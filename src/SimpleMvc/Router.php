@@ -41,6 +41,14 @@ class Router {
 
         $controllerClass = '\\controller' . str_replace('/', '\\', substr($uri, 0, $p));
 
+        if (substr($uri, $p + 4, 1) === '/') {
+            $_SERVER['PATH_INFO'] = substr($uri, $p + 4);
+            $qs = strpos($_SERVER['PATH_INFO'], '?');
+            if ($qs !== false) {
+                $_SERVER['PATH_INFO'] = substr($_SERVER['PATH_INFO'], 0, $qs);
+            }
+        }
+
         if (class_exists($controllerClass)) {
             if (is_null($this->configfile)) {
                 $moodleConfig = new MoodleConfig($this->moodleroot . '/config.php');
@@ -53,19 +61,11 @@ class Router {
             exit;
         }
 
-        if (substr($uri, $p + 4, 1) === '/') {
-            $_SERVER['PATH_INFO'] = substr($uri, $p + 4);
-            $qs = strpos($_SERVER['PATH_INFO'], '?');
-            if ($qs !== false) {
-                $_SERVER['PATH_INFO'] = substr($_SERVER['PATH_INFO'], 0, $qs);
-            }
-        }
-
-
-        if (!is_null($this->whitelist) && !isset($this->whitelist->$script)) {
+        // We shouldn't get here as all pages have been converted to controllers.
+        // if (!is_null($this->whitelist) && !isset($this->whitelist->$script)) {
             header("HTTP/1.0 401 Not authorised");
             die("Not authorised");
-        }
+        //}
 
         chdir(dirname($script));
         include $script;
