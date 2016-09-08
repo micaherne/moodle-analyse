@@ -5,10 +5,13 @@ namespace MoodleAnalyse\SimpleMvc;
 class Router {
 
     private $moodleroot;
+    private $configfile;
+
     private $whitelist;
 
-    public function __construct($moodleroot) {
+    public function __construct($moodleroot, $configfile = null) {
         $this->moodleroot = $moodleroot;
+        $this->configfile = $configfile;
     }
 
     public function setWhitelist($whitelist) {
@@ -39,7 +42,12 @@ class Router {
         $controllerClass = '\\controller' . str_replace('/', '\\', substr($uri, 0, $p));
 
         if (class_exists($controllerClass)) {
-            require_once $this->moodleroot . '/config.php';
+            if (is_null($this->configfile)) {
+                require_once $this->moodleroot . '/config.php';
+            } else {
+                require_once $this->configfile;
+            }
+
             $controller = new $controllerClass();
             $controller->run();
             exit;
