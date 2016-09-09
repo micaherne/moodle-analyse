@@ -39,6 +39,14 @@ class Router {
 
         $script = realpath($this->moodleroot . substr($uri, 0, $p + 4));
 
+        if (!$script) {
+            header("HTTP/1.0 401 Not authorised");
+            die("Not authorised");
+        }
+
+        // Hack to prevent relative calls like file_exists() breaking.
+        chdir(dirname($script));
+
         $controllerClass = '\\controller' . str_replace('/', '\\', substr($uri, 0, $p));
 
         if (substr($uri, $p + 4, 1) === '/') {
