@@ -2,7 +2,13 @@
 
 require_once __DIR__ . '/vendor/autoload.php';
 
-$moodleroot = realpath(__DIR__ . '/moodle');
+if (count($argv) < 2) {
+    die("Usage php {$argv[0]} [moodle root]");
+}
+
+if (!$moodleroot = realpath($argv[1])) {
+    die("Invalid Moodle root");
+}
 
 $gen = new \MoodleAnalyse\SimpleMvc\ControllerGenerator($moodleroot);
 $entryPoints = new \MoodleAnalyse\EntryPoint\EntryPointIterator($moodleroot, __DIR__ . '/whitelist.json');

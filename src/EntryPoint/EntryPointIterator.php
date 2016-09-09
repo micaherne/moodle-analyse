@@ -145,6 +145,7 @@ class EntryPointIterator implements \Iterator {
 
         // core directories
         // lib has some entry points like requirejs.php
+        $exclude[realpath($this->moodleroot . '/.git')] = true;
         $exclude[realpath($this->moodleroot . '/lib/tests')] = true;
         $exclude[realpath($this->moodleroot . '/backup/cc')] = true;
         $exclude[realpath($this->moodleroot . '/backup/controller')] = true;
@@ -176,6 +177,7 @@ class EntryPointIterator implements \Iterator {
                     // TODO: Remove: testing only
                     // $exclude[realpath($dir)] = true;
 
+                    $exclude[realpath($dir . '/.git')] = true;
                     $exclude[realpath($dir . '/amd')] = true;
                     $exclude[realpath($dir . '/backup')] = true;
                     $exclude[realpath($dir . '/behat')] = true;
