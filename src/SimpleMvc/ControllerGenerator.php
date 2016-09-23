@@ -57,6 +57,10 @@ class ControllerGenerator {
         $extractFunctions = new \MoodleAnalyse\Parse\ExtractFunctionsVisitor();
         $traverser->addVisitor($extractFunctions);
 
+        // hoist classes to top (e.g. admin/tool/health/index.php)
+        $extractClasses = new \MoodleAnalyse\Parse\ExtractClassesVisitor();
+        $traverser->addVisitor($extractClasses);
+
         $stmts = $traverser->traverse($stmts);
 
         // Build tree for code generation.
@@ -68,6 +72,7 @@ class ControllerGenerator {
                     ->makePublic()
                     ->addParam($factory->param('moodleConfig')->setTypeHint('MoodleConfig'))
                     ->addStmts($stmts_globals)
+                    ->addStmts($extractClasses->classes)
                     ->addStmts($extractFunctions->functions)
                     ->addStmts($stmts)
                   )
