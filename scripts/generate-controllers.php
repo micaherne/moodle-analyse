@@ -1,6 +1,6 @@
 <?php
 
-require_once __DIR__ . '/vendor/autoload.php';
+require_once __DIR__ . '/../vendor/autoload.php';
 
 if (count($argv) < 2) {
     die("Usage php {$argv[0]} [moodle root]");
