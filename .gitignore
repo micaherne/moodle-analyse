@@ -1,0 +1,5 @@
+/vendor/
+/composer.phar
+/phive.phar
+/.phpunit.result.cache
+/.idea/
