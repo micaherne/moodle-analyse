@@ -13,7 +13,7 @@ class FileFinderTest extends TestCase
      */
     public function testGetFileIterator()
     {
-        $moodleroot = __DIR__ . '/../moodle';
+        $moodleroot = __DIR__ . '/../../moodle';
         if (!is_dir($moodleroot)) {
             $this->markTestSkipped("No moodle codebase found");
         }

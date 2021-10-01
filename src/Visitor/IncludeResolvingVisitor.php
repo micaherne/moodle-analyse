@@ -5,10 +5,19 @@ namespace MoodleAnalyse\Visitor;
 use JetBrains\PhpStorm\Pure;
 use PhpParser\Node;
 use PhpParser\Node\Expr\Include_;
-use PhpParser\NodeTraverser;
 use PhpParser\NodeVisitor\FindingVisitor;
-use PhpParser\NodeVisitorAbstract;
 
+/**
+ * Resolve includes into a standard format, for example:
+ *
+ * @/admin/antiviruses.php, where @ signifies the root of the Moodle codebase.
+ *
+ * Variables, including array fetches and object properties, and method calls are surrounded by
+ * braces, e.g.
+ *
+ * @/user/profile/field/{$proffields[$field]->datatype}/field.class.php
+ *
+ */
 class IncludeResolvingVisitor extends FindingVisitor
 {
 

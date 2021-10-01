@@ -108,7 +108,7 @@ class IncludeResolvingVisitorTest extends TestCase
             '@/mod/assign/submission/{$name}/locallib.php'
         ];
 
-        $in = fopen(__DIR__ . '/fixtures/requires.csv', 'r');
+        $in = fopen(__DIR__ . '/../fixtures/requires.csv', 'r');
         while($row = fgetcsv($in)) {
             yield [$row[0], 'require_once' . $row[1], $row[2]];
         }
