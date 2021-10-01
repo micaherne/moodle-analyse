@@ -61,10 +61,7 @@ class IncludeResolvingVisitor extends FindingVisitor
                 } elseif ($node->name instanceof Node\Identifier && $node->name->name === 'admin') {
                     $this->setPathComponent($node, 'admin');
                 }
-            } /*else if ($node->name instanceof Node\Identifier) {
-                $this->setPathComponent($node, '{$' . $node->var->name . '->' . $node->name->name . '}');
-                return NodeTraverser::DONT_TRAVERSE_CHILDREN;
-            }*/
+            }
         } elseif ($node instanceof Node\Expr\BinaryOp\Concat) {
             // Nothing to do here.
             $this->setPathComponent($node, '');
@@ -74,14 +71,8 @@ class IncludeResolvingVisitor extends FindingVisitor
             $this->setPathComponent($node, '@/' . $this->filePath);
         } elseif ($node instanceof Node\Expr\Variable) {
             if ($node->name === 'CFG') {
-                return;
+                return null;
             }
-            $this->setPathComponent($node, '{$' . $node->name . '}');
-        } elseif ($node instanceof Node\Expr\MethodCall) {
-            $this->setPathComponent($node, '{$' . $node->var->name . '->' . $node->name->name . '()}');
-            return NodeTraverser::DONT_TRAVERSE_CHILDREN;
-        } elseif ($node instanceof Node\Expr\ArrayDimFetch) {
-            $this->setPathComponent($node, '{$' . $node->var->name . '[$' . $node->dim->name . ']');
         }
 
         else {
@@ -107,11 +98,32 @@ class IncludeResolvingVisitor extends FindingVisitor
         }
     }
 
+    private function getPathComponent(Node $node): ?string {
+        return $node->getAttribute(self::INCLUDE_CONTRIBUTION);
+    }
+
+    /**
+     * @param Node $node
+     * @return string
+     */
+    private function getPathComponentNoBraces(Node $node): ?string
+    {
+        $component = $this->getPathComponent($node->var);
+        if (is_null($component)) {
+            return null;
+        }
+        return trim($component, '{}');
+    }
+
     private function setPathComponent(Node $node, string $value): void {
         $existing = $node->getAttribute(self::INCLUDE_CONTRIBUTION);
         if (!is_null($existing)) {
             throw new \Exception("Node already has component value");
         }
+        $node->setAttribute(self::INCLUDE_CONTRIBUTION, $value);
+    }
+
+    private function overridePathComponent(Node $node, string $value): void {
         $node->setAttribute(self::INCLUDE_CONTRIBUTION, $value);
     }
 
@@ -126,12 +138,22 @@ class IncludeResolvingVisitor extends FindingVisitor
             if ($node->name instanceof Node\Name && $node->name->parts[0] === 'dirname') {
                 $argumentNode = $node->args[0];
                 if ($argumentNode->value instanceof Node\Scalar\MagicConst\File) {
-                    // TODO: This doesn't work properly.
                     $node->setAttribute(self::INCLUDE_CONTRIBUTION, dirname($argumentNode->getAttribute(self::INCLUDE_CONTRIBUTION)));
                 }
             }
+        } elseif ($node instanceof Node\Expr\Variable) {
+            if ($node->name === 'CFG') {
+                return null;
+            }
+            $this->overridePathComponent($node, '{$' . $node->name . '}');
         } elseif ($node instanceof Node\Expr\MethodCall) {
-            $x = "arse";
+            $this->overridePathComponent($node, '{' . $this->getPathComponentNoBraces($node) . '->' . $node->name->name . '()}');
+        } elseif ($node instanceof Node\Expr\ArrayDimFetch) {
+            $this->overridePathComponent($node, '{' . $this->getPathComponentNoBraces($node) . '[$' . $node->dim->name . ']}');
+        } elseif ($node instanceof Node\Expr\PropertyFetch) {
+            if (!($node->var instanceof Node\Expr\Variable && $node->var->name === 'CFG')) {
+                $this->overridePathComponent($node, '{' . $this->getPathComponentNoBraces($node) . '->' . $node->name->name . '}');
+            }
         }
 
         $this->updateParentPath($node);

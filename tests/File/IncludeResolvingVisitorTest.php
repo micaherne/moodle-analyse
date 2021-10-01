@@ -53,14 +53,6 @@ class IncludeResolvingVisitorTest extends TestCase
     {
 
         yield [
-            'admin/tool/uploaduser/index.php',
-            "require_once(\$CFG->dirroot.'/user/profile/field/'.\$proffields[\$field]->datatype.'/field.class.php')",
-            '@/user/profile/field/{$proffields[$field]->datatype}/field.class.php'
-        ];
-
-        return;
-
-        yield [
             'auth/db/cli/sync_users.php',
             "require_once(__DIR__.'/../../../config.php')",
             '@/config.php'
