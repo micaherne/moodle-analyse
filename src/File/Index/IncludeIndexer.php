@@ -2,6 +2,7 @@
 
 namespace MoodleAnalyse\File\Index;
 
+use MoodleAnalyse\Visitor\IncludeResolvingVisitor;
 use PhpParser\Node;
 use PhpParser\Node\Expr\Include_;
 use PhpParser\Node\Stmt\Function_;
@@ -21,10 +22,9 @@ class IncludeIndexer implements FileIndexer
 
     private string $fileContents;
 
-    /**
-     * @var FindingVisitor
-     */
-    private $includeFindingVisitor;
+    private FindingVisitor $includeFindingVisitor;
+
+    private IncludeResolvingVisitor $includeResolvingVisitor;
 
     /**
      * @inheritDoc
@@ -37,8 +37,11 @@ class IncludeIndexer implements FileIndexer
 
         $this->includeFindingVisitor = new FindingVisitor(fn(Node $node) => $node instanceof Include_);
 
+        $this->includeResolvingVisitor = new IncludeResolvingVisitor();
+
         $this->visitors = [
-            $this->includeFindingVisitor
+            $this->includeFindingVisitor,
+            $this->includeResolvingVisitor,
         ];
 
         return $this->visitors;
@@ -47,6 +50,8 @@ class IncludeIndexer implements FileIndexer
     public function setFile(SplFileInfo $file): void
     {
         $this->file = $file;
+        // includeFindingVisitor doesn't need the file.
+        $this->includeResolvingVisitor->setFile($file);
     }
 
     public function writeIndex(): void
@@ -58,7 +63,10 @@ class IncludeIndexer implements FileIndexer
                 'file' => str_replace('\\', '/', $this->file->getRelativePathname()),
                 'fullIncludeText' => substr($this->fileContents, $include->getStartFilePos(), $include->getEndFilePos() - $include->getStartFilePos() + 1),
                 'includeExpressionText' => substr($this->fileContents, $include->expr->getStartFilePos(), $include->expr->getEndFilePos() - $include->expr->getStartFilePos() + 1),
-                'topLevel' => is_null($parent)
+                'topLevel' => is_null($parent),
+                'resolved' => $include->getAttribute(IncludeResolvingVisitor::RESOLVED_INCLUDE),
+                'includePosition' => [$include->getStartFilePos(), $include->getEndFilePos()],
+                'includeExpressionPosition' => [$include->expr->getStartFilePos(), $include->expr->getEndFilePos()],
             ];
             $indexEntry['key'] = sha1($indexEntry['file'] . ':' . $indexEntry['fullIncludeText']);
             echo json_encode($indexEntry, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);

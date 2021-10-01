@@ -1,8 +1,10 @@
 <?php
 
 use MoodleAnalyse\File\FileFinder;
+use MoodleAnalyse\File\Index\FileIndexer;
 use MoodleAnalyse\File\Index\FunctionDefinitionIndexer;
 use MoodleAnalyse\File\Index\IncludeIndexer;
+use MoodleAnalyse\Visitor\IncludeResolvingVisitor;
 use PhpParser\Lexer;
 use PhpParser\Node;
 use PhpParser\NodeTraverser;
@@ -27,27 +29,33 @@ $traverser->addVisitor(new NameResolver());
 $traverser->addVisitor(new ParentConnectingVisitor());
 
 $functionDefinitionIndexer = new FunctionDefinitionIndexer();
-foreach ($functionDefinitionIndexer->getNodeVisitors() as $visitor) {
-    $traverser->addVisitor($visitor);
-}
-
 $includeIndexer = new IncludeIndexer();
-foreach ($includeIndexer->getNodeVisitors() as $visitor) {
-    $traverser->addVisitor($visitor);
+
+/**
+ * @var FileIndexer[]
+ */
+$indexers = [$functionDefinitionIndexer, $includeIndexer];
+
+/** @var FileIndexer $indexer */
+foreach ($indexers as $indexer) {
+    foreach ($indexer->getNodeVisitors() as $visitor) {
+        $traverser->addVisitor($visitor);
+    }
 }
 
 /** @var \Symfony\Component\Finder\SplFileInfo $file */
 foreach ($fileFinder->getFileIterator() as $file) {
-    $functionDefinitionIndexer->setFile($file);
-    $includeIndexer->setFile($file);
-
     $fileContents = $file->getContents();
 
-    $functionDefinitionIndexer->setFileContents($fileContents);
-    $includeIndexer->setFileContents($fileContents);
+    foreach ($indexers as $indexer) {
+        $indexer->setFile($file);
+        $indexer->setFileContents($fileContents);
+    }
 
     $nodes = $parser->parse($fileContents);
     $n = $traverser->traverse($nodes);
-    $functionDefinitionIndexer->writeIndex();
-    $includeIndexer->writeIndex();
+
+    foreach ($indexers as $indexer) {
+        $indexer->writeIndex();
+    }
 }

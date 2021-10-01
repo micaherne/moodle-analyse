@@ -6,6 +6,7 @@ use JetBrains\PhpStorm\Pure;
 use PhpParser\Node;
 use PhpParser\Node\Expr\Include_;
 use PhpParser\NodeVisitor\FindingVisitor;
+use Symfony\Component\Finder\SplFileInfo;
 
 /**
  * Resolve includes into a standard format, for example:
@@ -21,6 +22,7 @@ use PhpParser\NodeVisitor\FindingVisitor;
 class IncludeResolvingVisitor extends FindingVisitor
 {
 
+    const AFTER_CONFIG_INCLUDE = 'afterConfigInclude';
     private string $filePath;
 
     private const INCLUDE_CONTRIBUTION = 'includeContribution';
@@ -28,9 +30,21 @@ class IncludeResolvingVisitor extends FindingVisitor
 
     private bool $insideInclude = false;
 
+    private bool $afterConfigInclude = false;
+
     public function __construct()
     {
         parent::__construct(fn(Node $node) => $node instanceof Include_);
+    }
+
+    public function beforeTraverse(array $nodes)
+    {
+        $this->afterConfigInclude = false;
+    }
+
+    public function setFile(SplFileInfo $file): void
+    {
+        $this->filePath = str_replace('\\', '/', $file->getRelativePathname());
     }
 
     /**
@@ -112,13 +126,17 @@ class IncludeResolvingVisitor extends FindingVisitor
             }
         }
 
+        $node->setAttribute(self::AFTER_CONFIG_INCLUDE, $this->afterConfigInclude);
+
         $this->updateParentPath($node);
 
         if ($node instanceof Include_) {
             $this->insideInclude = false;
             $rawPath = $node->getAttribute(self::INCLUDE_CONTRIBUTION);
             $node->setAttribute(self::RESOLVED_INCLUDE, $this->normalise($rawPath));
-            return;
+            if ($this->normalise($rawPath) === '@/config.php') {
+                $this->afterConfigInclude = true;
+            }
         }
     }
 

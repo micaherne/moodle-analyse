@@ -20,6 +20,7 @@ class FileFinderTest extends TestCase
         $fileFinder = new FileFinder($moodleroot);
         /** @var SplFileInfo $file */
         foreach ($fileFinder->getFileIterator() as $file) {
+            echo "Checking file $file\n";
             $contents = $file->getContents();
             if (str_contains($contents, 'config.php')) {
                 echo $file->getRelativePathname() . "\n";

@@ -1,5 +1,8 @@
 <?php
 
+/*
+ * This script takes a previous list of require test cases and converts them for the current implementation.
+ */
 $in = fopen(__DIR__ . '/../tests/fixtures/requires-original.csv', 'r');
 $out = fopen(__DIR__ . '/../tests/fixtures/requires.csv', 'w');
 $components = json_decode(file_get_contents(__DIR__ . '/../moodle/lib/components.json'));
