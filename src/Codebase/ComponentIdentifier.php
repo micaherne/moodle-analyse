@@ -67,7 +67,7 @@ class ComponentIdentifier
         }
 
         foreach ($this->subsystems as $subsystem => $subsystemDirectory) {
-            if (str_starts_with($fileRelativePath, $subsystemDirectory)) {
+            if (str_starts_with($fileRelativePath, $subsystemDirectory . '/')) {
                 return 'core_' . $subsystem;
             }
         }

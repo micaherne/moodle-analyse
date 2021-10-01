@@ -2,29 +2,28 @@
 
 namespace MoodleAnalyse\File\Index;
 
+use MoodleAnalyse\Codebase\ComponentIdentifier;
 use MoodleAnalyse\Visitor\IncludeResolvingVisitor;
 use PhpParser\Node;
 use PhpParser\Node\Expr\Include_;
-use PhpParser\Node\Stmt\Function_;
 use PhpParser\NodeVisitor;
 use PhpParser\NodeVisitor\FindingVisitor;
-use PhpParser\NodeVisitorAbstract;
-use Symfony\Component\Finder\SplFileInfo;
 
-class IncludeIndexer implements FileIndexer
+class IncludeIndexer implements FileIndexer, UsesComponentIdentifier
 {
-    private SplFileInfo $file;
 
     /**
      * @var NodeVisitor[]
      */
     private array $visitors = [];
 
-    private string $fileContents;
-
     private FindingVisitor $includeFindingVisitor;
 
     private IncludeResolvingVisitor $includeResolvingVisitor;
+
+    private ComponentIdentifier $componentIdentifier;
+
+    private FileDetails $fileDetails;
 
     /**
      * @inheritDoc
@@ -47,24 +46,21 @@ class IncludeIndexer implements FileIndexer
         return $this->visitors;
     }
 
-    public function setFile(SplFileInfo $file): void
-    {
-        $this->file = $file;
-        // includeFindingVisitor doesn't need the file.
-        $this->includeResolvingVisitor->setFile($file);
-    }
+
 
     public function writeIndex(): void
     {
         /** @var Include_ $include */
         foreach ($this->includeFindingVisitor->getFoundNodes() as $include) {
             $parent = $include->getAttribute('parent')->getAttribute('parent');
+            $resolvedInclude = $include->getAttribute(IncludeResolvingVisitor::RESOLVED_INCLUDE);
             $indexEntry = [
-                'file' => str_replace('\\', '/', $this->file->getRelativePathname()),
-                'fullIncludeText' => substr($this->fileContents, $include->getStartFilePos(), $include->getEndFilePos() - $include->getStartFilePos() + 1),
-                'includeExpressionText' => substr($this->fileContents, $include->expr->getStartFilePos(), $include->expr->getEndFilePos() - $include->expr->getStartFilePos() + 1),
+                'file' => str_replace('\\', '/', $this->fileDetails->getFileInfo()->getRelativePathname()),
+                'fullIncludeText' => substr($this->fileDetails->getContents(), $include->getStartFilePos(), $include->getEndFilePos() - $include->getStartFilePos() + 1),
+                'includeExpressionText' => substr($this->fileDetails->getContents(), $include->expr->getStartFilePos(), $include->expr->getEndFilePos() - $include->expr->getStartFilePos() + 1),
                 'topLevel' => is_null($parent),
-                'resolved' => $include->getAttribute(IncludeResolvingVisitor::RESOLVED_INCLUDE),
+                'resolved' => $resolvedInclude,
+                'includeComponent' => $this->componentIdentifier->fileComponent(substr($resolvedInclude, 2)),
                 'includePosition' => [$include->getStartFilePos(), $include->getEndFilePos()],
                 'includeExpressionPosition' => [$include->expr->getStartFilePos(), $include->expr->getEndFilePos()],
             ];
@@ -76,5 +72,16 @@ class IncludeIndexer implements FileIndexer
     public function setFileContents(string $fileContents): void
     {
         $this->fileContents = $fileContents;
+    }
+
+    public function setComponentIdentifier(ComponentIdentifier $componentIdentifier): void
+    {
+        $this->componentIdentifier = $componentIdentifier;
+    }
+
+    public function setFileDetails(FileDetails $fileDetails): void
+    {
+        $this->fileDetails = $fileDetails;
+        $this->includeResolvingVisitor->setFile($fileDetails->getFileInfo());
     }
 }

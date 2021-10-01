@@ -2,6 +2,7 @@
 
 namespace MoodleAnalyse\File\Index;
 
+use MoodleAnalyse\Codebase\ComponentIdentifier;
 use PhpParser\Node;
 use PhpParser\Node\Stmt\Function_;
 use PhpParser\NodeVisitor;
@@ -11,17 +12,14 @@ use Symfony\Component\Finder\SplFileInfo;
 class FunctionDefinitionIndexer implements FileIndexer
 {
 
-    private SplFileInfo $file;
-
     /**
      * @var NodeVisitor[]
      */
     private array $visitors = [];
 
-    private string $fileContents;
+    private FindingVisitor $functionFindingVisitor;
 
-    /** @var FindingVisitor */
-    private $functionFindingVisitor;
+    private FileDetails $fileDetails;
 
     /**
      * @return NodeVisitor[]
@@ -41,25 +39,21 @@ class FunctionDefinitionIndexer implements FileIndexer
         return $this->visitors;
     }
 
-    public function setFile(SplFileInfo $file): void
-    {
-        $this->file = $file;
-    }
-
     public function writeIndex(): void
     {
         /** @var Function_ $functionDefinition */
         foreach ($this->functionFindingVisitor->getFoundNodes() as $functionDefinition) {
-            echo $this->file->getRelativePathname() . ': ' . $functionDefinition->name->name . "\n";
+            echo $this->fileDetails->getFileInfo()->getRelativePathname() . ': ' . $functionDefinition->name->name . "\n";
         }
     }
 
-    public function setFileContents(string $fileContents): void
+    public function setComponentIdentifier(ComponentIdentifier $componentIdentifier): void
     {
-        $this->fileContents = $fileContents;
+        $this->componentIdentifier = $componentIdentifier;
     }
 
-    /**
-     * @return NodeVisitor[]
-     */
+    public function setFileDetails(FileDetails $fileDetails): void
+    {
+        $this->fileDetails = $fileDetails;
+    }
 }

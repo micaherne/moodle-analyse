@@ -3,6 +3,7 @@
 namespace MoodleAnalyse\File;
 
 use PHPUnit\Framework\TestCase;
+use SebastianBergmann\FileIterator\Iterator;
 use Symfony\Component\Finder\SplFileInfo;
 
 class FileFinderTest extends TestCase
@@ -18,13 +19,17 @@ class FileFinderTest extends TestCase
             $this->markTestSkipped("No moodle codebase found");
         }
         $fileFinder = new FileFinder($moodleroot);
-        /** @var SplFileInfo $file */
-        foreach ($fileFinder->getFileIterator() as $file) {
-            echo "Checking file $file\n";
-            $contents = $file->getContents();
-            if (str_contains($contents, 'config.php')) {
-                echo $file->getRelativePathname() . "\n";
+
+        $iterator = new class($fileFinder->getFileIterator()) extends \IteratorIterator {
+            public function current()
+            {
+                return $this->getInnerIterator()->current()->getRelativePathname();
             }
-        }
+
+        };
+
+        $this->assertContains('admin' . DIRECTORY_SEPARATOR . 'antiviruses.php', $iterator);
+        $this->assertContains('analytics' . DIRECTORY_SEPARATOR . 'lib.php', $iterator);
+
     }
 }

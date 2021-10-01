@@ -23,6 +23,8 @@ class ComponentIdentifierTest extends TestCase
             $componentIdentifier->fileComponent('lib/editor/classes/privacy/provider.php'));
         $this->assertEquals('moodle',
             $componentIdentifier->fileComponent('lib/dml/moodle_recordset.php'));
+        $this->assertEquals('moodle',
+            $componentIdentifier->fileComponent('lib/formslib.php'));
     }
 
 
