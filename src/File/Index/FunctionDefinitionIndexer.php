@@ -6,7 +6,6 @@ use PhpParser\Node;
 use PhpParser\Node\Stmt\Function_;
 use PhpParser\NodeVisitor;
 use PhpParser\NodeVisitor\FindingVisitor;
-use PhpParser\NodeVisitorAbstract;
 use Symfony\Component\Finder\SplFileInfo;
 
 class FunctionDefinitionIndexer implements FileIndexer

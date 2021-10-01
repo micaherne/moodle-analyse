@@ -2,6 +2,7 @@
 
 namespace MoodleAnalyse;
 
+use MoodleAnalyse\Codebase\CodebasePath;
 use PhpParser\ParserFactory;
 use PHPUnit\Framework\TestCase;
 
