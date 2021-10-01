@@ -54,6 +54,12 @@ class IncludeResolvingVisitorTest extends TestCase
 
         yield [
             'auth/db/cli/sync_users.php',
+            "require_once(__DIR__.'/something/' . functioncall() . '/test.php')",
+            '@/auth/db/cli/something/{functioncall()}/test.php'
+        ];
+
+        yield [
+            'auth/db/cli/sync_users.php',
             "require_once(__DIR__.'/../../../config.php')",
             '@/config.php'
         ];

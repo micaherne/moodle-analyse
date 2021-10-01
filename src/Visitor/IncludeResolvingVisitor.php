@@ -50,7 +50,8 @@ class IncludeResolvingVisitor extends FindingVisitor
         }
 
         /*
-         * Add the path component if necessary.
+         * Add the path component if necessary. This is mainly string-like components, more structured
+         * ones such as variables and method calls are dealt with in leaveNode().
          *
          * We can safely ignore some types as they don't contribute anything on their own:
          *
@@ -71,24 +72,56 @@ class IncludeResolvingVisitor extends FindingVisitor
                     $this->setPathComponent($node, 'admin');
                 }
             }
-        } elseif ($node instanceof Node\Expr\BinaryOp\Concat) {
-            // Nothing to do here.
-            $this->setPathComponent($node, '');
         } elseif ($node instanceof Node\Scalar\MagicConst\Dir) {
             $this->setPathComponent($node, '@/' . dirname($this->filePath));
         } elseif ($node instanceof Node\Scalar\MagicConst\File) {
             $this->setPathComponent($node, '@/' . $this->filePath);
+        }
+    }
+
+    public function leaveNode(Node $node)
+    {
+
+        if (!$this->insideInclude) {
+            return;
+        }
+
+        if ($node instanceof Node\Expr\FuncCall) {
+            if ($node->name instanceof Node\Name && $node->name->parts[0] === 'dirname') {
+                $argumentNode = $node->args[0];
+                if ($argumentNode->value instanceof Node\Scalar\MagicConst\File) {
+                    $this->overridePathComponent($node, dirname($argumentNode->getAttribute(self::INCLUDE_CONTRIBUTION)));
+                }
+            } else {
+                // Only supports function calls with no parameters.
+                $this->overridePathComponent($node, '{' . $node->name->toCodeString() . '()}');
+            }
         } elseif ($node instanceof Node\Expr\Variable) {
             if ($node->name === 'CFG') {
                 return null;
             }
+            $this->overridePathComponent($node, '{$' . $node->name . '}');
+        } elseif ($node instanceof Node\Expr\MethodCall) {
+            // This only supports method calls with no parameters.
+            $this->overridePathComponent($node, '{' . $this->getPathComponentNoBraces($node) . '->' . $node->name->name . '()}');
+        } elseif ($node instanceof Node\Expr\ArrayDimFetch) {
+            $this->overridePathComponent($node, '{' . $this->getPathComponentNoBraces($node) . '[$' . $node->dim->name . ']}');
+        } elseif ($node instanceof Node\Expr\PropertyFetch) {
+            if (!($node->var instanceof Node\Expr\Variable && $node->var->name === 'CFG')) {
+                $this->overridePathComponent($node, '{' . $this->getPathComponentNoBraces($node) . '->' . $node->name->name . '}');
+            }
         }
 
-        else {
-            $x = "Unknown node type";
-        }
+        $this->updateParentPath($node);
 
+        if ($node instanceof Include_) {
+            $this->insideInclude = false;
+            $rawPath = $node->getAttribute(self::INCLUDE_CONTRIBUTION);
+            $node->setAttribute(self::RESOLVED_INCLUDE, $this->normalise($rawPath));
+            return;
+        }
     }
+
 
     private function updateParentPath(Node $node): void {
 
@@ -134,45 +167,6 @@ class IncludeResolvingVisitor extends FindingVisitor
 
     private function overridePathComponent(Node $node, string $value): void {
         $node->setAttribute(self::INCLUDE_CONTRIBUTION, $value);
-    }
-
-    public function leaveNode(Node $node)
-    {
-
-        if (!$this->insideInclude) {
-            return;
-        }
-
-        if ($node instanceof Node\Expr\FuncCall) {
-            if ($node->name instanceof Node\Name && $node->name->parts[0] === 'dirname') {
-                $argumentNode = $node->args[0];
-                if ($argumentNode->value instanceof Node\Scalar\MagicConst\File) {
-                    $node->setAttribute(self::INCLUDE_CONTRIBUTION, dirname($argumentNode->getAttribute(self::INCLUDE_CONTRIBUTION)));
-                }
-            }
-        } elseif ($node instanceof Node\Expr\Variable) {
-            if ($node->name === 'CFG') {
-                return null;
-            }
-            $this->overridePathComponent($node, '{$' . $node->name . '}');
-        } elseif ($node instanceof Node\Expr\MethodCall) {
-            $this->overridePathComponent($node, '{' . $this->getPathComponentNoBraces($node) . '->' . $node->name->name . '()}');
-        } elseif ($node instanceof Node\Expr\ArrayDimFetch) {
-            $this->overridePathComponent($node, '{' . $this->getPathComponentNoBraces($node) . '[$' . $node->dim->name . ']}');
-        } elseif ($node instanceof Node\Expr\PropertyFetch) {
-            if (!($node->var instanceof Node\Expr\Variable && $node->var->name === 'CFG')) {
-                $this->overridePathComponent($node, '{' . $this->getPathComponentNoBraces($node) . '->' . $node->name->name . '}');
-            }
-        }
-
-        $this->updateParentPath($node);
-
-        if ($node instanceof Include_) {
-            $this->insideInclude = false;
-            $rawPath = $node->getAttribute(self::INCLUDE_CONTRIBUTION);
-            $node->setAttribute(self::RESOLVED_INCLUDE, $this->normalise($rawPath));
-            return;
-        }
     }
 
     private function normalise(string $path): string {
