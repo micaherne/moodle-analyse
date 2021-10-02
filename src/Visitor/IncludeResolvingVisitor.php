@@ -119,7 +119,13 @@ class IncludeResolvingVisitor extends FindingVisitor
             // This only supports method calls with no parameters.
             $this->overridePathComponent($node, '{' . $this->getPathComponentNoBraces($node) . '->' . $node->name->name . '()}');
         } elseif ($node instanceof Node\Expr\ArrayDimFetch) {
-            $this->overridePathComponent($node, '{' . $this->getPathComponentNoBraces($node) . '[$' . $node->dim->name . ']}');
+            $dim = null;
+            if ($node->dim instanceof Node\Scalar\String_) {
+                $dim = "'" . $node->dim->value . "'";
+            } else {
+                $dim = '$' . $node->dim->name;
+            }
+            $this->overridePathComponent($node, '{' . $this->getPathComponentNoBraces($node) . '[' . $dim . ']}');
         } elseif ($node instanceof Node\Expr\PropertyFetch) {
             if (!($node->var instanceof Node\Expr\Variable && $node->var->name === 'CFG')) {
                 $this->overridePathComponent($node, '{' . $this->getPathComponentNoBraces($node) . '->' . $node->name->name . '}');

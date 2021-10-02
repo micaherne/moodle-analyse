@@ -53,6 +53,12 @@ class IncludeResolvingVisitorTest extends TestCase
     {
 
         yield [
+            'lib/tests/grading_externallib_test.php',
+            'require($CFG->dirroot.\'/grade/grading/form/\'.$rubricdefinition[\'method\'].\'/lib.php\');',
+            '@/grade/grading/form/{$rubricdefinition[\'method\']}/lib.php'
+        ];
+
+        yield [
             'auth/db/cli/sync_users.php',
             "require_once(__DIR__.'/something/' . functioncall() . '/test.php')",
             '@/auth/db/cli/something/{functioncall()}/test.php'
