@@ -1,6 +1,6 @@
 <?php
 
-namespace MoodleAnalyse\File\Index;
+namespace MoodleAnalyse\File\Analyse;
 
 use MoodleAnalyse\Codebase\ComponentIdentifier;
 

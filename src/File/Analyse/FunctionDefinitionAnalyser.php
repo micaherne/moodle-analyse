@@ -1,6 +1,6 @@
 <?php
 
-namespace MoodleAnalyse\File\Index;
+namespace MoodleAnalyse\File\Analyse;
 
 use MoodleAnalyse\Codebase\ComponentIdentifier;
 use PhpParser\Node;
@@ -9,7 +9,7 @@ use PhpParser\NodeVisitor;
 use PhpParser\NodeVisitor\FindingVisitor;
 use Symfony\Component\Finder\SplFileInfo;
 
-class FunctionDefinitionIndexer implements FileIndexer
+class FunctionDefinitionAnalyser implements FileAnalyser
 {
 
     /**
@@ -39,12 +39,14 @@ class FunctionDefinitionIndexer implements FileIndexer
         return $this->visitors;
     }
 
-    public function writeIndex(): void
+    public function getAnalysis(): array
     {
-        /** @var Function_ $functionDefinition */
-        foreach ($this->functionFindingVisitor->getFoundNodes() as $functionDefinition) {
-            echo $this->fileDetails->getFileInfo()->getRelativePathname() . ': ' . $functionDefinition->name->name . "\n";
-        }
+        $result = [];
+
+        $functionDefs = array_map(fn(Function_ $functionNode) => $functionNode->name->name, $this->functionFindingVisitor->getFoundNodes());
+
+        $result[$this->fileDetails->getFileInfo()->getRelativePathname()] = $functionDefs;
+        return $result;
     }
 
     public function setComponentIdentifier(ComponentIdentifier $componentIdentifier): void

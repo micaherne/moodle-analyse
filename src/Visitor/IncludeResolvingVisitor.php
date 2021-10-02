@@ -108,7 +108,15 @@ class IncludeResolvingVisitor extends FindingVisitor
                 }
             } else {
                 // Only supports function calls with no parameters.
-                $this->overridePathComponent($node, '{' . $node->name->toCodeString() . '()}');
+                $args = [];
+                foreach ($node->args as $arg) {
+                    if ($arg->value instanceof Node\Scalar\String_) {
+                        $args[] = "'" . $arg->value->value . "'";
+                    } else {
+                        $args[] = $this->getPathComponentNoBraces($arg);
+                    }
+                }
+                $this->overridePathComponent($node, '{' . $node->name->toCodeString() . '(' . implode(', ', $args) . ')}');
             }
         } elseif ($node instanceof Node\Expr\Variable) {
             if ($node->name === 'CFG') {
@@ -117,18 +125,19 @@ class IncludeResolvingVisitor extends FindingVisitor
             $this->overridePathComponent($node, '{$' . $node->name . '}');
         } elseif ($node instanceof Node\Expr\MethodCall) {
             // This only supports method calls with no parameters.
-            $this->overridePathComponent($node, '{' . $this->getPathComponentNoBraces($node) . '->' . $node->name->name . '()}');
+            $this->overridePathComponent($node, '{' . $this->getPathComponentNoBraces($node->var) . '->' . $node->name->name . '()}');
         } elseif ($node instanceof Node\Expr\ArrayDimFetch) {
-            $dim = null;
             if ($node->dim instanceof Node\Scalar\String_) {
                 $dim = "'" . $node->dim->value . "'";
+            } elseif ($node->dim instanceof Node\Scalar\LNumber) {
+                $dim = $node->dim->value;
             } else {
                 $dim = '$' . $node->dim->name;
             }
-            $this->overridePathComponent($node, '{' . $this->getPathComponentNoBraces($node) . '[' . $dim . ']}');
+            $this->overridePathComponent($node, '{' . $this->getPathComponentNoBraces($node->var) . '[' . $dim . ']}');
         } elseif ($node instanceof Node\Expr\PropertyFetch) {
             if (!($node->var instanceof Node\Expr\Variable && $node->var->name === 'CFG')) {
-                $this->overridePathComponent($node, '{' . $this->getPathComponentNoBraces($node) . '->' . $node->name->name . '}');
+                $this->overridePathComponent($node, '{' . $this->getPathComponentNoBraces($node->var) . '->' . $node->name->name . '}');
             }
         }
 
@@ -147,7 +156,8 @@ class IncludeResolvingVisitor extends FindingVisitor
     }
 
 
-    private function updateParentPath(Node $node): void {
+    private function updateParentPath(Node $node): void
+    {
 
         $value = $node->getAttribute(self::INCLUDE_CONTRIBUTION) ?? '';
 
@@ -164,7 +174,8 @@ class IncludeResolvingVisitor extends FindingVisitor
         }
     }
 
-    private function getPathComponent(Node $node): ?string {
+    private function getPathComponent(Node $node): ?string
+    {
         return $node->getAttribute(self::INCLUDE_CONTRIBUTION);
     }
 
@@ -174,14 +185,15 @@ class IncludeResolvingVisitor extends FindingVisitor
      */
     private function getPathComponentNoBraces(Node $node): ?string
     {
-        $component = $this->getPathComponent($node->var);
+        $component = $this->getPathComponent($node);
         if (is_null($component)) {
             return null;
         }
         return trim($component, '{}');
     }
 
-    private function setPathComponent(Node $node, string $value): void {
+    private function setPathComponent(Node $node, string $value): void
+    {
         $existing = $node->getAttribute(self::INCLUDE_CONTRIBUTION);
         if (!is_null($existing)) {
             throw new \Exception("Node already has component value");
@@ -189,13 +201,15 @@ class IncludeResolvingVisitor extends FindingVisitor
         $node->setAttribute(self::INCLUDE_CONTRIBUTION, $value);
     }
 
-    private function overridePathComponent(Node $node, string $value): void {
+    private function overridePathComponent(Node $node, string $value): void
+    {
         $node->setAttribute(self::INCLUDE_CONTRIBUTION, $value);
     }
 
-    private function normalise(string $path): string {
+    private function normalise(string $path): string
+    {
         $path = $this->fixPearLibraries($path);
-        if (!str_starts_with($path, '@')) {
+        if (!str_starts_with($path, '@') && !str_starts_with($path, '{')) {
             $path = '@/' . dirname($this->filePath) . '/' . $path;
         }
         $path = $this->handleDots($path);
@@ -217,12 +231,16 @@ class IncludeResolvingVisitor extends FindingVisitor
         return $path;
     }
 
-    private function handleDots(string $path): string {
+    private function handleDots(string $path): string
+    {
         if (str_contains($path, '/../')) {
             $pattern = '/\/[^.\/]+\/\.\.\//';
-            while(preg_match($pattern, $path)) {
+            while (preg_match($pattern, $path)) {
                 $path = preg_replace($pattern, '/', $path);
             }
+        }
+        if (str_contains($path, '/./')) {
+            $path = str_replace('/./', '/', $path);
         }
         return $path;
     }

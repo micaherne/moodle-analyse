@@ -1,12 +1,12 @@
 <?php
 
-namespace MoodleAnalyse\File\Index;
+namespace MoodleAnalyse\File\Analyse;
 
 use MoodleAnalyse\Codebase\ComponentIdentifier;
 use PhpParser\NodeVisitor;
 use Symfony\Component\Finder\SplFileInfo;
 
-interface FileIndexer
+interface FileAnalyser
 {
     /**
      * @return NodeVisitor[]
@@ -15,5 +15,5 @@ interface FileIndexer
 
     public function setFileDetails(FileDetails $fileDetails): void;
 
-    public function writeIndex(): void;
+    public function getAnalysis(): array;
 }

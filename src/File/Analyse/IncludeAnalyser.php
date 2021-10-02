@@ -1,6 +1,6 @@
 <?php
 
-namespace MoodleAnalyse\File\Index;
+namespace MoodleAnalyse\File\Analyse;
 
 use MoodleAnalyse\Codebase\ComponentIdentifier;
 use MoodleAnalyse\Visitor\IncludeResolvingVisitor;
@@ -9,7 +9,7 @@ use PhpParser\Node\Expr\Include_;
 use PhpParser\NodeVisitor;
 use PhpParser\NodeVisitor\FindingVisitor;
 
-class IncludeIndexer implements FileIndexer, UsesComponentIdentifier
+class IncludeAnalyser implements FileAnalyser, UsesComponentIdentifier
 {
 
     /**
@@ -48,8 +48,9 @@ class IncludeIndexer implements FileIndexer, UsesComponentIdentifier
 
 
 
-    public function writeIndex(): void
+    public function getAnalysis(): array
     {
+        $index = [];
         /** @var Include_ $include */
         foreach ($this->includeFindingVisitor->getFoundNodes() as $include) {
             $parent = $include->getAttribute('parent')->getAttribute('parent');
@@ -65,8 +66,10 @@ class IncludeIndexer implements FileIndexer, UsesComponentIdentifier
                 'includeExpressionPosition' => [$include->expr->getStartFilePos(), $include->expr->getEndFilePos()],
             ];
             $indexEntry['key'] = sha1($indexEntry['file'] . ':' . $indexEntry['fullIncludeText']);
-            echo json_encode($indexEntry, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+            $index[$indexEntry['key']] = $indexEntry;
         }
+
+        return $index;
     }
 
     public function setFileContents(string $fileContents): void

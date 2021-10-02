@@ -1,12 +1,13 @@
 <?php
 
 use MoodleAnalyse\Codebase\ComponentIdentifier;
+use MoodleAnalyse\File\Analyse\Engine;
 use MoodleAnalyse\File\FileFinder;
-use MoodleAnalyse\File\Index\FileDetails;
-use MoodleAnalyse\File\Index\FileIndexer;
-use MoodleAnalyse\File\Index\FunctionDefinitionIndexer;
-use MoodleAnalyse\File\Index\IncludeIndexer;
-use MoodleAnalyse\File\Index\UsesComponentIdentifier;
+use MoodleAnalyse\File\Analyse\FileDetails;
+use MoodleAnalyse\File\Analyse\FileAnalyser;
+use MoodleAnalyse\File\Analyse\FunctionDefinitionAnalyser;
+use MoodleAnalyse\File\Analyse\IncludeAnalyser;
+use MoodleAnalyse\File\Analyse\UsesComponentIdentifier;
 use PhpParser\Lexer;
 use PhpParser\NodeTraverser;
 use PhpParser\NodeVisitor\NameResolver;
@@ -22,49 +23,6 @@ if (!is_dir($indexDirectory)) {
 
 $moodleroot = __DIR__ . '/../moodle';
 
-$fileFinder = new FileFinder($moodleroot);
+$engine = new Engine($moodleroot, $indexDirectory);
 
-$lexer = new Lexer(['usedAttributes' => ['startFilePos', 'endFilePos']]);
-$parser = (new ParserFactory())->create(ParserFactory::PREFER_PHP7, $lexer);
-$traverser = new NodeTraverser();
-$traverser->addVisitor(new NameResolver());
-$traverser->addVisitor(new ParentConnectingVisitor());
-
-$functionDefinitionIndexer = new FunctionDefinitionIndexer();
-$includeIndexer = new IncludeIndexer();
-
-$componentIdentifier = new ComponentIdentifier($moodleroot);
-
-/**
- * @var FileIndexer[]
- */
-$indexers = [$functionDefinitionIndexer, $includeIndexer];
-
-/** @var FileIndexer $indexer */
-foreach ($indexers as $indexer) {
-    if ($indexer instanceof UsesComponentIdentifier) {
-        $indexer->setComponentIdentifier($componentIdentifier);
-    }
-    foreach ($indexer->getNodeVisitors() as $visitor) {
-        $traverser->addVisitor($visitor);
-    }
-}
-
-/** @var \Symfony\Component\Finder\SplFileInfo $file */
-foreach ($fileFinder->getFileIterator() as $file) {
-    $fileContents = $file->getContents();
-    $component = $componentIdentifier->fileComponent($file->getRelativePathname());
-
-    $fileDetails = new FileDetails($file, $fileContents, $component);
-
-    foreach ($indexers as $indexer) {
-        $indexer->setFileDetails($fileDetails);
-    }
-
-    $nodes = $parser->parse($fileContents);
-    $n = $traverser->traverse($nodes);
-
-    foreach ($indexers as $indexer) {
-        $indexer->writeIndex();
-    }
-}
+$engine->execute();

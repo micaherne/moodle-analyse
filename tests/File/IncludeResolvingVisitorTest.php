@@ -35,7 +35,7 @@ class IncludeResolvingVisitorTest extends TestCase
     /**
      * @dataProvider requireDataProvider
      */
-    public function testResolve($path, $require, $expected)
+    public function testResolve($path, $require, $expected, $message = '')
     {
         $visitor = new IncludeResolvingVisitor();
         $visitor->setFilePath($path);
@@ -45,12 +45,32 @@ class IncludeResolvingVisitorTest extends TestCase
 
         $includes = $visitor->getIncludes();
 
-        $this->assertEquals($expected, $includes[0]->getAttribute(IncludeResolvingVisitor::RESOLVED_INCLUDE));
+        $this->assertEquals($expected, $includes[0]->getAttribute(IncludeResolvingVisitor::RESOLVED_INCLUDE), $message);
 
     }
 
     public function requireDataProvider(): \Generator
     {
+
+        yield [
+            'tag/classes/tag.php',
+            'require_once($CFG->dirroot . \'/\' . ltrim($tagarea->callbackfile, \'/\'))',
+            '@/{ltrim($tagarea->callbackfile, \'/\')}'
+        ];
+
+        yield [
+            'lib/tests/some_test.php',
+            'require($somevariable);',
+            '{$somevariable}',
+            'Paths starting with variables should not be changed to relative paths'
+        ];
+
+        yield [
+            'admin/mnet/trustedhosts.php',
+            'include(\'./trustedhosts.html\')',
+            '@/admin/mnet/trustedhosts.html',
+            'Single dot components should be removed'
+        ];
 
         yield [
             'lib/tests/grading_externallib_test.php',

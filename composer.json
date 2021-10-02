@@ -6,6 +6,11 @@
       "MoodleAnalyse\\": "src/"
     }
   },
+  "autoload-dev": {
+    "psr-4": {
+      "MoodleAnalyse\\": "tests/"
+    }
+  },
   "authors": [
     {
       "name": "Michael Aherne",
