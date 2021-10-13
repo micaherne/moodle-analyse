@@ -2,7 +2,9 @@
 
 namespace MoodleAnalyse\File\Analyse;
 
+use JetBrains\PhpStorm\Pure;
 use MoodleAnalyse\Codebase\ComponentIdentifier;
+use MoodleAnalyse\File\Index\BasicObjectIndex;
 use MoodleAnalyse\Visitor\IncludeResolvingVisitor;
 use PhpParser\Node;
 use PhpParser\Node\Expr\Include_;
@@ -47,7 +49,9 @@ class IncludeAnalyser implements FileAnalyser, UsesComponentIdentifier
     }
 
 
-
+    /**
+     * @throws \Exception
+     */
     public function getAnalysis(): array
     {
         $index = [];
@@ -65,16 +69,22 @@ class IncludeAnalyser implements FileAnalyser, UsesComponentIdentifier
                 'includePosition' => [$include->getStartFilePos(), $include->getEndFilePos()],
                 'includeExpressionPosition' => [$include->expr->getStartFilePos(), $include->expr->getEndFilePos()],
             ];
-            $indexEntry['key'] = sha1($indexEntry['file'] . ':' . $indexEntry['fullIncludeText']);
-            $index[$indexEntry['key']] = $indexEntry;
+            $indexEntry['key'] = sha1($indexEntry['file'] . ':' . $indexEntry['fullIncludeText'] . ':' . $indexEntry['includePosition'][0]);
+            $index[$indexEntry['key']] = (object) $indexEntry;
         }
 
         return $index;
     }
 
-    public function setFileContents(string $fileContents): void
-    {
-        $this->fileContents = $fileContents;
+    /**
+     * @return BasicObjectIndex[]
+     */
+    #[Pure] public function getIndexes(): array {
+        return [
+            new BasicObjectIndex('include',
+                ['file', 'fullIncludeText', 'includeExpressionText', 'resolved', 'includeComponent'],
+                [self::class])
+        ];
     }
 
     public function setComponentIdentifier(ComponentIdentifier $componentIdentifier): void

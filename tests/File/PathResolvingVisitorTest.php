@@ -3,24 +3,28 @@
 namespace MoodleAnalyse\File;
 
 use MoodleAnalyse\Visitor\IncludeResolvingVisitor;
+use MoodleAnalyse\Visitor\PathFindingVisitor;
+use MoodleAnalyse\Visitor\PathResolvingVisitor;
 use PhpParser\NodeTraverser;
 use PhpParser\NodeVisitor\ParentConnectingVisitor;
 use PhpParser\Parser;
 use PhpParser\ParserFactory;
 use PHPUnit\Framework\TestCase;
 
-class IncludeResolvingVisitorTest extends TestCase
+class PathResolvingVisitorTest extends TestCase
 {
     private NodeTraverser $traverser;
     private Parser $parser;
-    private ParentConnectingVisitor $visitor;
+    private ParentConnectingVisitor $parentConnectingVisitor;
+    private NodeTraverser $preProcessor;
 
     protected function setUp(): void
     {
         $this->parser = (new ParserFactory())->create(ParserFactory::PREFER_PHP7);
         $this->traverser = new NodeTraverser();
-        $this->visitor = new ParentConnectingVisitor();
-        $this->traverser->addVisitor($this->visitor);
+        $this->preProcessor = new NodeTraverser();
+        $this->parentConnectingVisitor = new ParentConnectingVisitor();
+        $this->traverser->addVisitor($this->parentConnectingVisitor);
     }
 
     protected function tearDown(): void
@@ -28,7 +32,7 @@ class IncludeResolvingVisitorTest extends TestCase
         parent::tearDown();
         unset($this->parser);
         unset($this->traverser);
-        unset($this->visitor);
+        unset($this->parentConnectingVisitor);
     }
 
 
@@ -37,20 +41,57 @@ class IncludeResolvingVisitorTest extends TestCase
      */
     public function testResolve($path, $require, $expected, $message = '')
     {
-        $visitor = new IncludeResolvingVisitor();
+
+        $visitor = new PathResolvingVisitor();
         $visitor->setFilePath($path);
+
         $this->traverser->addVisitor($visitor);
         $nodes = $this->parser->parse("<?php {$require};");
+
+        $this->preProcessor->addVisitor($this->parentConnectingVisitor);
+        $this->preProcessor->addVisitor(new PathFindingVisitor());
+        $nodes = $this->preProcessor->traverse($nodes);
+
         $this->traverser->traverse($nodes);
 
-        $includes = $visitor->getIncludes();
+        $pathNodes = $visitor->getPathNodes();
 
-        $this->assertEquals($expected, $includes[0]->getAttribute(IncludeResolvingVisitor::RESOLVED_INCLUDE), $message);
+        $this->assertEquals($expected, $pathNodes[0]->getAttribute(IncludeResolvingVisitor::RESOLVED_INCLUDE), $message);
 
     }
 
     public function requireDataProvider(): \Generator
     {
+        yield [
+            'lib/externallib.php',
+            'require($CFG->moodlepageclassfile)',
+            '{$CFG->moodlepageclassfile}'
+        ];
+
+        yield [
+            'lib/editor/atto/classes/plugininfo/atto.php',
+            'require_once($this->full_path(\'settings.php\'))',
+            '{$this->full_path(\'settings.php\')}'
+        ];
+
+        yield [
+            'install.php',
+            '$CFG->dirroot  = __DIR__',
+            '@'
+        ];
+
+        yield [
+            'admin/settings/plugins.php',
+            'require_once($CFG->dirroot . \'/portfolio/\' . $portfolio->get(\'plugin\') . \'/lib.php\');',
+            '@/portfolio/{$portfolio->get(\'plugin\')}/lib.php'
+        ];
+
+        yield [
+            'lib/somelib.php',
+            'require($CFG->dirroot . DIRECTORY_SEPARATOR . "config.php")',
+            '@/config.php'
+        ];
+
         yield [
             'tag/classes/tag.php',
             'require_once($CFG->dirroot . \'/\' . ltrim($tagarea->callbackfile, \'/\'))',

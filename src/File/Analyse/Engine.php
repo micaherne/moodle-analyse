@@ -4,6 +4,8 @@ namespace MoodleAnalyse\File\Analyse;
 
 use MoodleAnalyse\Codebase\ComponentIdentifier;
 use MoodleAnalyse\File\FileFinder;
+use MoodleAnalyse\File\Index\BasicObjectIndex;
+use MoodleAnalyse\File\Index\Index;
 use PhpParser\Lexer;
 use PhpParser\NodeTraverser;
 use PhpParser\NodeVisitor\NameResolver;
@@ -22,6 +24,9 @@ class Engine
     private $includeAnalyser;
     private $componentIdentifier;
     private $analysers;
+
+    /** @var Index[] */
+    private array $indexes = [];
 
     /**
      * @param string $moodleroot
@@ -53,6 +58,8 @@ class Engine
          */
         $this->analysers = [$this->functionDefinitionAnalyser, $this->includeAnalyser];
 
+        $this->indexes = [];
+
         /** @var FileAnalyser $analyser */
         foreach ($this->analysers as $analyser) {
             if ($analyser instanceof UsesComponentIdentifier) {
@@ -60,6 +67,10 @@ class Engine
             }
             foreach ($analyser->getNodeVisitors() as $visitor) {
                 $this->traverser->addVisitor($visitor);
+            }
+            foreach ($analyser->getIndexes() as $index) {
+                $index->setIndexDirectory($this->indexDirectory);
+                $this->indexes[] = $index;
             }
         }
     }
@@ -85,11 +96,17 @@ class Engine
             $n = $this->traverser->traverse($nodes);
 
             foreach ($this->analysers as $analyser) {
-                // $analyser->writeIndex();
+                $analysis = $analyser->getAnalysis();
+                foreach ($this->indexes as $index) {
+                    if (in_array(get_class($analyser), $index->getSources())) {
+                        $index->index($analysis, get_class($analyser));
+                    }
+                }
+
+                // Get rid of this - it's just a test thing.
                 if ($analyser instanceof IncludeAnalyser) {
-                    $analysis = $analyser->getAnalysis();
                     foreach ($analysis as $include) {
-                        $resolved = $include['resolved'];
+                        $resolved = $include->resolved;
                         if (!array_key_exists($resolved, $requireCounts)) {
                             $requireCounts[$resolved] = 0;
                         }
@@ -112,6 +129,12 @@ class Engine
             fputcsv($out, [$target, $count]);
         }
         fclose($out);
+    }
+
+    public function addIndex(\MoodleAnalyse\File\Index\BasicObjectIndex $index)
+    {
+        $index->setIndexDirectory($this->indexDirectory);
+        $this->indexes[] = $index;
     }
 
 

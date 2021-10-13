@@ -18,7 +18,8 @@
     }
   ],
   "require": {
-    "symfony/console": "^5.0",
+    "symfony/cache": "^5.3",
+    "symfony/console": "^5.3",
     "nikic/php-parser": "^4.13",
     "symfony/finder": "^5.3",
     "symfony/filesystem": "^5.3",

@@ -3,6 +3,7 @@
 namespace MoodleAnalyse\File\Analyse;
 
 use MoodleAnalyse\Codebase\ComponentIdentifier;
+use MoodleAnalyse\File\Index\BasicObjectIndex;
 use PhpParser\Node;
 use PhpParser\Node\Stmt\Function_;
 use PhpParser\NodeVisitor;
@@ -43,9 +44,16 @@ class FunctionDefinitionAnalyser implements FileAnalyser
     {
         $result = [];
 
-        $functionDefs = array_map(fn(Function_ $functionNode) => $functionNode->name->name, $this->functionFindingVisitor->getFoundNodes());
-
-        $result[$this->fileDetails->getFileInfo()->getRelativePathname()] = $functionDefs;
+        /** @var Function_ $functionDef */
+        foreach ($this->functionFindingVisitor->getFoundNodes() as $functionDef) {
+            $indexEntry = [
+                'file' => $this->fileDetails->getFileInfo()->getRelativePathname(),
+                'functionName' => $functionDef->namespacedName->toCodeString(),
+                'filePosition' => [$functionDef->getStartFilePos(), $functionDef->getEndFilePos()]
+            ];
+            $indexEntry['key'] = sha1($indexEntry['file'] . ':' . $indexEntry['functionName'] . ':' . $indexEntry['filePosition'][0]);
+            $result[] = (object) $indexEntry;
+        }
         return $result;
     }
 
@@ -57,5 +65,12 @@ class FunctionDefinitionAnalyser implements FileAnalyser
     public function setFileDetails(FileDetails $fileDetails): void
     {
         $this->fileDetails = $fileDetails;
+    }
+
+    public function getIndexes(): array
+    {
+        return [
+            new BasicObjectIndex('functionDef', ['file'], [self::class])
+        ];
     }
 }
