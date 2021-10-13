@@ -63,6 +63,24 @@ class PathResolvingVisitorTest extends TestCase
     public function requireDataProvider(): \Generator
     {
         yield [
+            'mod/assign/feedback/editpdf/classes/pdf.php',
+            '$CFG->dirroot . self::BLANK_PDF',
+            '@{self::BLANK_PDF}'
+        ];
+
+        yield [
+            'h5p/classes/local/library/handler.php',
+            'file_exists($CFG->dirroot . static::get_h5p_core_library_base($classes[$classname]))',
+            '@{static::get_h5p_core_library_base($classes[$classname])}'
+        ];
+
+        yield [
+            'h5p/classes/editor.php',
+            'file_get_contents("{$CFG->dirroot}" . autoloader::get_h5p_editor_library_base($languagescript))',
+            '@{autoloader::get_h5p_editor_library_base($languagescript)}'
+        ];
+
+        yield [
             'lib/externallib.php',
             'require($CFG->moodlepageclassfile)',
             '{$CFG->moodlepageclassfile}'

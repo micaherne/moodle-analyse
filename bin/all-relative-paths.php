@@ -58,6 +58,16 @@ foreach ($finder->getFileIterator() as $file) {
         echo "\n";
 
         $outputRow = [$relativePathname, $pathNode->getStartLine(), $pathNode->getEndLine(), $code, $resolvedInclude];
+        if ($pathNode->hasAttribute(PathResolvingVisitor::CONTAINING_EXPRESSION)) {
+            /** @var Node\Expr $parentNode */
+            $parentNode = $pathNode->getAttribute(PathResolvingVisitor::CONTAINING_EXPRESSION);
+            $parentCode = substr($contents, $parentNode->getStartFilePos(), $parentNode->getEndFilePos() - $parentNode->getStartFilePos() + 1);
+            $outputRow = array_merge($outputRow, [$parentCode, $parentNode->getStartLine(), $parentNode->getEndLine()]);
+
+            if ($parentNode instanceof Node\Expr\FuncCall) {
+                $outputRow[] = $parentNode->name->toCodeString();
+            }
+        }
         fputcsv($out, $outputRow);
     }
 }

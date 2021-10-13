@@ -22,11 +22,16 @@ use Symfony\Component\Finder\SplFileInfo;
 class PathResolvingVisitor extends NodeVisitorAbstract
 {
 
-    const AFTER_CONFIG_INCLUDE = 'afterConfigInclude';
-    private string $filePath;
+    public const AFTER_CONFIG_INCLUDE = 'afterConfigInclude';
 
-    private const INCLUDE_CONTRIBUTION = 'includeContribution';
+    // The expression node (variable assignment, require, function call etc.) containing the path node.
+    public const CONTAINING_EXPRESSION = 'containingExpression';
     public const RESOLVED_INCLUDE = 'resolvedInclude';
+
+    // Private as it's for internal use by this class only.
+    private const INCLUDE_CONTRIBUTION = 'includeContribution';
+
+    private string $filePath;
 
     private bool $insidePathNode = false;
 
@@ -116,14 +121,7 @@ class PathResolvingVisitor extends NodeVisitorAbstract
                     $this->overridePathComponent($node, dirname($argumentNode->getAttribute(self::INCLUDE_CONTRIBUTION)));
                 }
             } else {
-                $args = [];
-                foreach ($node->args as $arg) {
-                    if ($arg->value instanceof Node\Scalar\String_) {
-                        $args[] = "'" . $arg->value->value . "'";
-                    } else {
-                        $args[] = $this->getPathComponentNoBraces($arg);
-                    }
-                }
+                $args = $this->getArgValues($node);
                 $this->overridePathComponent($node, '{' . $node->name->toCodeString() . '(' . implode(', ', $args) . ')}');
             }
         } elseif ($node instanceof Node\Expr\Variable) {
@@ -132,17 +130,15 @@ class PathResolvingVisitor extends NodeVisitorAbstract
             }
             $this->overridePathComponent($node, '{$' . $node->name . '}');
         } elseif ($node instanceof Node\Expr\MethodCall) {
-            // This only supports method calls with no parameters.
-            $args = [];
-            foreach ($node->args as $arg) {
-                if ($arg->value instanceof Node\Scalar\String_) {
-                    $args[] = "'" . $arg->value->value . "'";
-                } else {
-                    $args[] = $this->getPathComponentNoBraces($arg);
-                }
-            }
+            $args = $this->getArgValues($node);
             $this->overridePathComponent($node, '{' . $this->getPathComponentNoBraces($node->var) . '->'
                 . $node->name->name . '(' . implode(', ', $args) . ')}');
+        } else if ($node instanceof Node\Expr\StaticCall) {
+            $args = $this->getArgValues($node);
+            if ($node->class instanceof Node\Name && $node->name instanceof Node\Identifier) {
+                $this->overridePathComponent($node, '{' . $node->class->toCodeString()
+                    . '::' . $node->name->toString() . '(' . implode(', ', $args) . ')}');
+            }
         } elseif ($node instanceof Node\Expr\ArrayDimFetch) {
             if ($node->dim instanceof Node\Scalar\String_) {
                 $dim = "'" . $node->dim->value . "'";
@@ -162,6 +158,11 @@ class PathResolvingVisitor extends NodeVisitorAbstract
                     $this->overridePathComponent($node, '{$CFG->' . $node->name->name . '}');
                 }
             }
+        } else if ($node instanceof Node\Expr\ClassConstFetch) {
+            if ($node->class instanceof Node\Name && $node->name instanceof Node\Identifier) {
+                $this->overridePathComponent($node, '{' . $node->class->toCodeString()
+                    . '::' . $node->name->toString() . '}');
+            }
         }
 
         $node->setAttribute(self::AFTER_CONFIG_INCLUDE, $this->afterConfigInclude);
@@ -172,11 +173,36 @@ class PathResolvingVisitor extends NodeVisitorAbstract
             $this->insidePathNode = false;
             $rawPath = $node->getAttribute(self::INCLUDE_CONTRIBUTION);
             $node->setAttribute(self::RESOLVED_INCLUDE, $this->normalise($rawPath));
+            $expressionNode = $this->findParentExpressionNode($node);
+
+            if (!is_null($expressionNode)) {
+                $node->setAttribute(self::CONTAINING_EXPRESSION, $expressionNode);
+            }
+
             if ($this->normalise($rawPath) === '@/config.php') {
                 $this->afterConfigInclude = true;
             }
             $this->pathNodes[] = $node;
         }
+    }
+
+    /**
+     * Walk up through the parent nodes of a path node to find the enclosing expression,
+     * e.g. a function call, require or variable assignment.
+     */
+    public function findParentExpressionNode(Node $node): ?Node
+    {
+        if (!$node->hasAttribute('parent')) {
+            return null;
+        }
+
+        $parent = $node->getAttribute('parent');
+
+        if ($parent instanceof Node\Expr) {
+            return $parent;
+        }
+
+        return $this->findParentExpressionNode($parent);
     }
 
     /**
@@ -289,6 +315,23 @@ class PathResolvingVisitor extends NodeVisitorAbstract
     private function isPathNode(Node $node): bool
     {
         return $node->hasAttribute('isCodepathNode') && $node->getAttribute('isCodepathNode');
+    }
+
+    /**
+     * @param Node\Expr\FuncCall|Node $node
+     * @return array
+     */
+    private function getArgValues(Node\Expr\FuncCall|Node $node): array
+    {
+        $args = [];
+        foreach ($node->args as $arg) {
+            if ($arg->value instanceof Node\Scalar\String_) {
+                $args[] = "'" . $arg->value->value . "'";
+            } else {
+                $args[] = $this->getPathComponentNoBraces($arg);
+            }
+        }
+        return $args;
     }
 
 }
