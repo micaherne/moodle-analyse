@@ -100,8 +100,22 @@ class PathResolvingVisitor extends NodeVisitorAbstract
             }
         } elseif ($node instanceof Node\Scalar\MagicConst\File) {
             $this->setPathComponent($node, '@/' . $this->filePath);
-        } elseif ($node instanceof Node\Expr\ConstFetch && $node->name->parts[0] === 'DIRECTORY_SEPARATOR') {
-            $this->setPathComponent($node, '/');
+        } elseif ($node instanceof Node\Expr\ConstFetch) {
+            if ($node->name->parts[0] === 'DIRECTORY_SEPARATOR') {
+                $this->setPathComponent($node, '/');
+            } else {
+                $this->setPathComponent($node, '{' . $node->name->toCodeString() . '}');
+            }
+        } elseif ($node instanceof Node\Expr\ClassConstFetch) {
+            if ($node->class instanceof Node\Name && $node->name instanceof Node\Identifier) {
+                $this->setPathComponent($node, '{' . $node->class->toCodeString()
+                    . '::' . $node->name->toString() . '}');
+            }
+        } elseif ($node instanceof Node\Expr\StaticPropertyFetch) {
+            if ($node->class instanceof Node\Name && $node->name instanceof Node\Identifier) {
+                $this->setPathComponent($node, '{' . $node->class->toCodeString()
+                    . '::$' . $node->name->toString() . '}');
+            }
         }
 
         // TODO: Deal with PATH_SEPARATOR.
@@ -117,8 +131,14 @@ class PathResolvingVisitor extends NodeVisitorAbstract
         if ($node instanceof Node\Expr\FuncCall) {
             if ($node->name instanceof Node\Name && $node->name->parts[0] === 'dirname') {
                 $argumentNode = $node->args[0];
-                if ($argumentNode->value instanceof Node\Scalar\MagicConst\File) {
-                    $this->overridePathComponent($node, dirname($argumentNode->getAttribute(self::INCLUDE_CONTRIBUTION)));
+                $includeContribution = $argumentNode->getAttribute(self::INCLUDE_CONTRIBUTION);
+
+                // If it goes beyond dirroot, add dots in.
+                // This only happens when admin/cli/install.php is looking for the default datadir.
+                if ($includeContribution === '@') {
+                    $this->overridePathComponent($node, '@/..');
+                } else {
+                    $this->overridePathComponent($node, dirname($includeContribution));
                 }
             } else {
                 $args = $this->getArgValues($node);

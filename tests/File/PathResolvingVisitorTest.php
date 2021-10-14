@@ -62,6 +62,28 @@ class PathResolvingVisitorTest extends TestCase
 
     public function requireDataProvider(): \Generator
     {
+
+        // We're never going to rewrite core_component but it would be good if this structure worked.
+        yield [
+            'lib/classes/component.php',
+            '$CFG->dirroot . self::$classmap[$classname]',
+            '@{self::$classmap[$classname]}'
+        ];
+
+        // Constants that aren't DIRECTORY_SEPARATOR should just be passed through as code.
+        yield [
+            'lib/behat/classes/behat_config_manager.php',
+            '$CFG->dirroot . \'/\' . BEHAT_PARALLEL_SITE_NAME . $i',
+            '@/{BEHAT_PARALLEL_SITE_NAME}{$i}'
+        ];
+
+        // Breaking out of dirroot to find the default datadir.
+        yield [
+            'admin/cli/install',
+            'dirname(dirname(dirname(__DIR__))).\'/moodledata\'',
+            '@/../moodledata'
+        ];
+
         yield [
             'mod/assign/feedback/editpdf/classes/pdf.php',
             '$CFG->dirroot . self::BLANK_PDF',

@@ -56,7 +56,9 @@ class PathFindingVisitor extends NodeVisitorAbstract {
             $function = $parent->getAttribute('parent');
 
             // We need to ignore dirname() as this is likely to be part of the path.
-            if (!$this->isDirnameCall($function)) {
+            if ($this->isDirnameCall($function)) {
+                return $this->findRelevantParent($parent);
+            } else {
                 if ($parent->value === $node) {
                     return $node;
                 } else {

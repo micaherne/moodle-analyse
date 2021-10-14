@@ -67,6 +67,9 @@ foreach ($finder->getFileIterator() as $file) {
             if ($parentNode instanceof Node\Expr\FuncCall) {
                 $outputRow[] = $parentNode->name->toCodeString();
             }
+
+            // Don't hold a reference to the node.
+            unset($parentNode);
         }
         fputcsv($out, $outputRow);
     }
