@@ -63,6 +63,13 @@ class PathResolvingVisitorTest extends TestCase
     public function requireDataProvider(): \Generator
     {
 
+        yield [
+            'repository/upload/tests/behat/behat_repository_upload.php',
+            '$filepath = $CFG->dirroot . DIRECTORY_SEPARATOR . $CFG->admin .
+                    DIRECTORY_SEPARATOR . substr($filepath, 6)',
+            '@/admin/{substr($filepath, 6)}'
+        ];
+
         // We're never going to rewrite core_component but it would be good if this structure worked.
         yield [
             'lib/classes/component.php',

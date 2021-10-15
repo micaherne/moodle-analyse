@@ -32,6 +32,8 @@ $processTraverser->addVisitor($pathResolvingVisitor);
 
 $out = fopen(__DIR__ . '/../relative-paths.csv', 'w');
 
+fputcsv($out, ['Relative filename', 'Path start line', 'Path end line', 'Path code', 'Resolved include',
+    'Parent code', 'Parent start line', 'Parent end line', 'Parent function call', 'Category']);
 /** @var \Symfony\Component\Finder\SplFileInfo $file */
 foreach ($finder->getFileIterator() as $file) {
     $relativePathname = str_replace('\\', '/', $file->getRelativePathname());
@@ -66,6 +68,33 @@ foreach ($finder->getFileIterator() as $file) {
 
             if ($parentNode instanceof Node\Expr\FuncCall) {
                 $outputRow[] = $parentNode->name->toCodeString();
+            } else {
+                $outputRow[] = '';
+            }
+
+            if (preg_match('#^@/?$#', $resolvedInclude)) {
+                $outputRow[] = 'dirroot';
+            } elseif ($resolvedInclude === '@/config.php') {
+                $outputRow[] = 'config';
+            } elseif (preg_match('#^@[\d\w\-/.]+\.\w+$#', $resolvedInclude)) {
+                $outputRow[] = 'simple file';
+            } elseif (preg_match('#^@[\d\w\-/]+/?$#', $resolvedInclude)) {
+                $outputRow[] = 'simple dir';
+            } elseif (preg_match('#^{[^}{]+}$#', $resolvedInclude)) {
+                // e.g. {$somevariable}
+                $outputRow[] = 'single var';
+            } elseif (preg_match('#^@/?{[^}{]+}$#', $resolvedInclude)) {
+                // e.g. @/{$somevariable}
+                $outputRow[] = 'full relative path';
+            } elseif (preg_match('#^.+@#', $resolvedInclude)) {
+                $outputRow[] = 'suspect - embedded @';
+            } elseif (preg_match('#\*#', $resolvedInclude)) {
+                $outputRow[] = 'glob';
+            } elseif (preg_match('#^{[^}{]+}/[^}{]+\.w+$#', $resolvedInclude)) {
+                # e.g. {$fullblock}/db/install.php
+                $outputRow[] = 'fulldir relative';
+            } else {
+                $outputRow[] = '';
             }
 
             // Don't hold a reference to the node.

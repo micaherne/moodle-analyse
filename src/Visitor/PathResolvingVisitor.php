@@ -75,9 +75,9 @@ class PathResolvingVisitor extends NodeVisitorAbstract
          * * Identifier
          * * Encapsed
          */
-        if ($node instanceof Node\Scalar\String_) {
-            $this->setPathComponent($node, $node->value);
-        } elseif ($node instanceof Node\Scalar\EncapsedStringPart) {
+
+        // Things like MagicConst\Dir are Node\Scalar too but don't have value.
+        if ($node instanceof Node\Scalar && property_exists($node, 'value')) {
             $this->setPathComponent($node, $node->value);
         } elseif ($node instanceof Node\Expr\PropertyFetch) {
             if ($node->var instanceof Node\Expr\Variable && $node->var->name === 'CFG') {

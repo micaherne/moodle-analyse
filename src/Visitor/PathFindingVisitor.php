@@ -6,7 +6,7 @@ use PhpParser\Node;
 use PhpParser\NodeVisitorAbstract;
 
 /**
- * For preprocessing. Find any nodes that look like
+ * For preprocessing. Find any nodes that look like paths to the codebase.
  */
 class PathFindingVisitor extends NodeVisitorAbstract {
 
