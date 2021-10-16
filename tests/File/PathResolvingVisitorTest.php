@@ -62,6 +62,26 @@ class PathResolvingVisitorTest extends TestCase
 
     public function coreComponentCheckingProvider()
     {
+
+        yield [
+            'question/engine/tests/helpers.php',
+            <<<'EOD'
+            $file = core_component::get_plugin_directory('qtype', $qtype) . '/tests/helper.php';
+            include_once($file);
+            EOD,
+            null
+        ];
+
+        yield [
+            'backup/util/plan/backup_structure_step.class.php',
+            <<<'EOD'
+            $parentfile = core_component::get_component_directory($plugintype . '_' . $pluginname) .
+            '/backup/moodle2/' . $parentclass . '.class.php';
+            require($parentfile);
+            EOD,
+            null
+        ];
+
         yield [
             'admin/settings.php',
             <<<'EOD'
@@ -70,11 +90,7 @@ class PathResolvingVisitorTest extends TestCase
                 require($settings_path);
             }
             EOD,
-            function ($pathNodes) {
-                $require = $pathNodes[0];
-                $attribute = $require->getAttribute('fromCoreComponent');
-                $this->assertTrue($attribute);
-            }
+            null
         ];
 
         yield [
@@ -89,11 +105,7 @@ class PathResolvingVisitorTest extends TestCase
                 }
             }
             EOD,
-            function ($pathNodes) {
-                $require = $pathNodes[0];
-                $attribute = $require->getAttribute('fromCoreComponent');
-                $this->assertTrue($attribute);
-            }
+            null
         ];
 
         yield [
@@ -104,11 +116,7 @@ class PathResolvingVisitorTest extends TestCase
             }
             require_once($componentloc . '/locallib.php');
             EOD,
-            function($pathNodes) {
-                $require = $pathNodes[0];
-                $attribute = $require->getAttribute('fromCoreComponent');
-                $this->assertTrue($attribute);
-            }
+            null
         ];
 
         yield [
@@ -117,11 +125,7 @@ class PathResolvingVisitorTest extends TestCase
             $base = core_component::get_plugin_directory($type, $name);
             include("{$base}/db/subplugins.php");
             EOD,
-            function($pathNodes) {
-                $require = $pathNodes[0];
-                $attribute = $require->getAttribute('fromCoreComponent');
-                $this->assertTrue($attribute);
-            }
+            null
         ];
 
         yield [
@@ -137,11 +141,7 @@ class PathResolvingVisitorTest extends TestCase
                     require_once($plugindir.'/addinstanceform.php');
                 }
             EOD,
-            function($pathNodes) {
-                $require = $pathNodes[0];
-                $attribute = $require->getAttribute('fromCoreComponent');
-                $this->assertTrue($attribute);
-            }
+            null
 
         ];
 
@@ -152,11 +152,7 @@ class PathResolvingVisitorTest extends TestCase
                 require_once($plugindir . '/lib.php');
             }
             EOD,
-            function($pathNodes) {
-                $require = $pathNodes[0];
-                $attribute = $require->getAttribute('fromCoreComponent');
-                $this->assertTrue($attribute);
-            }
+            null
 
         ];
 
@@ -168,11 +164,7 @@ class PathResolvingVisitorTest extends TestCase
                 require_once($plugindir . '/lib.php');
             }
             EOD,
-            function($pathNodes) {
-                $require = $pathNodes[0];
-                $attribute = $require->getAttribute('fromCoreComponent');
-                $this->assertTrue($attribute);
-            }
+            null
 
         ];
 
@@ -182,11 +174,7 @@ class PathResolvingVisitorTest extends TestCase
             $plugins = core_component::get_plugin_list('mod');
             require_once($plugins['name'] . '/lib.php');
             EOD,
-            function($pathNodes) {
-                $require = $pathNodes[0];
-                $attribute = $require->getAttribute('fromCoreComponent');
-                $this->assertTrue($attribute);
-            }
+            null
 
         ];
 
@@ -197,11 +185,7 @@ class PathResolvingVisitorTest extends TestCase
             $name = 'name';
             require_once($plugins[$name] . '/lib.php');
             EOD,
-            function($pathNodes) {
-                $require = $pathNodes[0];
-                $attribute = $require->getAttribute('fromCoreComponent');
-                $this->assertTrue($attribute);
-            }
+            null
 
         ];
 
@@ -213,7 +197,8 @@ class PathResolvingVisitorTest extends TestCase
      * @param string $code
      * @param callable $check
      */
-    public function testCoreComponentChecking(string $path, string $code, callable $check) {
+    public function testCoreComponentChecking(string $path, string $code, ?callable $check)
+    {
         $visitor = new PathResolvingVisitor();
         $visitor->setFilePath($path);
 
@@ -227,6 +212,14 @@ class PathResolvingVisitorTest extends TestCase
         $this->traverser->traverse($nodes);
 
         $pathNodes = $visitor->getPathNodes();
+
+        if (is_null($check)) {
+            $check = function ($pathNodes) {
+                $require = $pathNodes[0];
+                $attribute = $require->getAttribute('fromCoreComponent');
+                $this->assertTrue($attribute);
+            };
+        }
 
         $check($pathNodes);
     }
@@ -399,7 +392,7 @@ class PathResolvingVisitorTest extends TestCase
         ];
 
         $in = fopen(__DIR__ . '/../fixtures/requires.csv', 'r');
-        while($row = fgetcsv($in)) {
+        while ($row = fgetcsv($in)) {
             yield [$row[0], 'require_once' . $row[1], $row[2]];
         }
         fclose($in);

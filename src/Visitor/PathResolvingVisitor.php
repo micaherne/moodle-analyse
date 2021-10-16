@@ -48,6 +48,7 @@ class PathResolvingVisitor extends NodeVisitorAbstract
     public const FROM_CORE_COMPONENT = 'fromCoreComponent';
     /** @var string this uses a variable that was assigned from a previously identified path */
     public const ASSIGNED_FROM_PATH_VAR = 'assignedPathVariable';
+    const IS_CODEPATH_NODE = 'isCodepathNode';
 
     private string $filePath;
 
@@ -351,7 +352,7 @@ class PathResolvingVisitor extends NodeVisitorAbstract
      */
     private function isPathNode(Node $node): bool
     {
-        return $node->hasAttribute('isCodepathNode') && $node->getAttribute('isCodepathNode');
+        return $node->hasAttribute(self::IS_CODEPATH_NODE) && $node->getAttribute(self::IS_CODEPATH_NODE);
     }
 
     /**
@@ -400,6 +401,18 @@ class PathResolvingVisitor extends NodeVisitorAbstract
                 $parent = $node->getAttribute('parent');
                 if ($parent instanceof Node\Expr\Assign) {
                     $currentScope->getPluginListVars[$parent->var->name] = self::COMPONENT_INSTANCE;
+                } elseif ($parent instanceof Node\Expr\BinaryOp\Concat && $parent->left === $node) {
+                    $concatNode = $parent;
+                    // We only care about the left side as that is the only bit that can realistically
+                    // be a directory from core_component.
+                    while (($concatParent = $concatNode->getAttribute('parent')) instanceof Node\Expr\BinaryOp\Concat
+                        && $concatParent->left === $concatNode) {
+                        $concatNode = $concatParent;
+                    }
+
+                    if ($concatParent instanceof Node\Expr\Assign && $concatParent->var instanceof Node\Expr\Variable) {
+                        $currentScope->getPluginListVars[$concatParent->var->name] = self::COMPONENT_INSTANCE;
+                    }
                 }
             }
 
@@ -447,7 +460,7 @@ class PathResolvingVisitor extends NodeVisitorAbstract
                         }
                     }
                 }
-            } 
+            }
         }
     }
 
