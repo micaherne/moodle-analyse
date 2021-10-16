@@ -1,9 +1,10 @@
 <?php
+declare(strict_types=1);
 
 namespace MoodleAnalyse\File;
 
+use Exception;
 use Iterator;
-use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Finder\Finder;
 use Symfony\Component\Finder\SplFileInfo;
 
@@ -24,7 +25,7 @@ class FileFinder
      * @param string[] $types file extensions to return, empty means all files
      * @param bool $includeThirdPartyLibs
      * @return Iterator<SplFileInfo>
-     * @throws \Exception
+     * @throws Exception
      */
     public function getFileIterator(array $types = ['php'], bool $includeThirdPartyLibs = false): Iterator
     {
@@ -50,7 +51,7 @@ class FileFinder
         foreach ((array) $components->plugintypes as $plugintype => $plugintypeRoot) {
             $dirs = scandir($this->moodleroot . '/' . $plugintypeRoot);
             foreach ($dirs as $dir) {
-                if (strpos($dir, '.') === 0) {
+                if (str_starts_with($dir, '.')) {
                     continue;
                 }
                 $libFileDirectories[] = $plugintypeRoot . '/' . $dir;

@@ -1,8 +1,9 @@
 <?php
+declare(strict_types=1);
 
 namespace MoodleAnalyse\File\Index;
 
-use MoodleAnalyse\File\Analyse\IncludeAnalyser;
+use Exception;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 use Symfony\Component\Cache\CacheItem;
 use Symfony\Contracts\Cache\CacheInterface;
@@ -15,33 +16,25 @@ class BasicObjectIndex implements Index
     /** @var CacheInterface[] */
     private array $indexCaches = [];
 
-    private string $indexSubdirectory = 'include';
-    /** @var string[]  */
-    private array $fieldsToIndex = [];
-
-    /** @var string[] */
-    private array $sources = [];
-
     /**
      * @param string $indexSubdirectory
      * @param string[] $fieldsToIndex
      * @param string[] $sources
      */
-    public function __construct(string $indexSubdirectory, array $fieldsToIndex, array $sources)
+    public function __construct(private string $indexSubdirectory, private array $fieldsToIndex, private array $sources)
     {
-        $this->indexSubdirectory = $indexSubdirectory;
-        $this->fieldsToIndex = $fieldsToIndex;
-        $this->sources = $sources;
+
     }
 
 
-    public function getSources() {
+    public function getSources(): array
+    {
         return $this->sources;
     }
 
     public function index($analysis, ?string $sourceClass = null) {
         if (!is_null($sourceClass) && !in_array($sourceClass, $this->sources)) {
-            throw new \Exception("Unsupported class $sourceClass");
+            throw new Exception("Unsupported class $sourceClass");
         }
         $itemIndexes = array_fill_keys(array_keys($this->indexCaches), []);
         foreach ($analysis as $analysisItem) {

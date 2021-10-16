@@ -1,11 +1,10 @@
 <?php
+declare(strict_types=1);
 
 namespace MoodleAnalyse\File\Analyse;
 
-use MoodleAnalyse\Codebase\ComponentIdentifier;
 use MoodleAnalyse\File\Index\BasicObjectIndex;
 use PhpParser\NodeVisitor;
-use Symfony\Component\Finder\SplFileInfo;
 
 interface FileAnalyser
 {

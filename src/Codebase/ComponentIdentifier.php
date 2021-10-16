@@ -1,6 +1,9 @@
 <?php
+declare(strict_types=1);
 
 namespace MoodleAnalyse\Codebase;
+
+use Exception;
 
 class ComponentIdentifier
 {
@@ -19,7 +22,7 @@ class ComponentIdentifier
     }
 
     /**
-     * @throws \Exception
+     * @throws Exception
      */
     public function fileComponent(string $fileRelativePath): ?string
     {
@@ -77,19 +80,19 @@ class ComponentIdentifier
 
 
     /**
-     * @throws \Exception
+     * @throws Exception
      */
     private function init(): void
     {
         $componentsJsonFile = $this->moodleroot . '/lib/components.json';
 
         if (!file_exists($componentsJsonFile)) {
-            throw new \Exception("File not found: $componentsJsonFile");
+            throw new Exception("File not found: $componentsJsonFile");
         }
 
         $componentsJson = json_decode(file_get_contents($componentsJsonFile));
         if (is_null($componentsJson)) {
-            throw new \Exception("Unable to read components.json");
+            throw new Exception("Unable to read components.json");
         }
 
         $this->plugintypes = (array)$componentsJson->plugintypes;
@@ -99,6 +102,8 @@ class ComponentIdentifier
     /**
      * @param string $mainPluginDirectory
      * @return string[]
+     * @throws Exception
+     * @throws Exception
      */
     private function getSubpluginLocations(string $mainPluginDirectory): array
     {
@@ -110,7 +115,7 @@ class ComponentIdentifier
         if (file_exists($subpluginsJsonFile)) {
             $subplugins = json_decode(file_get_contents($subpluginsJsonFile));
             if (is_null($subplugins)) {
-                throw new \Exception("Unable to parse $subpluginsJsonFile");
+                throw new Exception("Unable to parse $subpluginsJsonFile");
             }
             $this->subpluginLocations[$mainPluginDirectory] = (array)$subplugins->plugintypes;
         } else {

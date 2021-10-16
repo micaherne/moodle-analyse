@@ -1,7 +1,9 @@
 <?php
+declare(strict_types=1);
 
 namespace MoodleAnalyse\File\Analyse;
 
+use Exception;
 use JetBrains\PhpStorm\Pure;
 use MoodleAnalyse\Codebase\ComponentIdentifier;
 use MoodleAnalyse\File\Index\BasicObjectIndex;
@@ -50,7 +52,7 @@ class IncludeAnalyser implements FileAnalyser, UsesComponentIdentifier
 
 
     /**
-     * @throws \Exception
+     * @throws Exception
      */
     public function getAnalysis(): array
     {

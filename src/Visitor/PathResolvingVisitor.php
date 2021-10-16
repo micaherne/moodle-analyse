@@ -1,10 +1,10 @@
 <?php
+declare(strict_types=1);
 
 namespace MoodleAnalyse\Visitor;
 
+use Exception;
 use PhpParser\Node;
-use PhpParser\Node\Expr\Include_;
-use PhpParser\NodeVisitor\FindingVisitor;
 use PhpParser\NodeVisitorAbstract;
 use Symfony\Component\Finder\SplFileInfo;
 
@@ -52,7 +52,7 @@ class PathResolvingVisitor extends NodeVisitorAbstract
     }
 
     /**
-     * @throws \Exception
+     * @throws Exception
      */
     public function enterNode(Node $node)
     {
@@ -78,7 +78,7 @@ class PathResolvingVisitor extends NodeVisitorAbstract
 
         // Things like MagicConst\Dir are Node\Scalar too but don't have value.
         if ($node instanceof Node\Scalar && property_exists($node, 'value')) {
-            $this->setPathComponent($node, $node->value);
+            $this->setPathComponent($node, (string) $node->value);
         } elseif ($node instanceof Node\Expr\PropertyFetch) {
             if ($node->var instanceof Node\Expr\Variable && $node->var->name === 'CFG') {
                 if ($node->name instanceof Node\Identifier && $node->name->name === 'dirroot') {
@@ -173,7 +173,7 @@ class PathResolvingVisitor extends NodeVisitorAbstract
             if (!$isCfgNode) {
                 $this->overridePathComponent($node, '{' . $this->getPathComponentNoBraces($node->var) . '->' . $node->name->name . '}');
             } else {
-                if ($isCfgNode && !in_array($node->name->name, ['dirroot', 'libdir', 'admin'])) {
+                if (!in_array($node->name->name, ['dirroot', 'libdir', 'admin'])) {
                     // Deal with things like $CFG->moodlepageclassfile
                     $this->overridePathComponent($node, '{$CFG->' . $node->name->name . '}');
                 }
@@ -258,7 +258,7 @@ class PathResolvingVisitor extends NodeVisitorAbstract
 
     /**
      * @param Node $node
-     * @return string
+     * @return string|null
      */
     private function getPathComponentNoBraces(Node $node): ?string
     {
@@ -273,7 +273,7 @@ class PathResolvingVisitor extends NodeVisitorAbstract
     {
         $existing = $node->getAttribute(self::INCLUDE_CONTRIBUTION);
         if (!is_null($existing)) {
-            throw new \Exception("Node already has component value");
+            throw new Exception("Node already has component value");
         }
         $node->setAttribute(self::INCLUDE_CONTRIBUTION, $value);
     }

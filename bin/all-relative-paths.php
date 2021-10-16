@@ -1,5 +1,6 @@
 <?php
 
+use MoodleAnalyse\Codebase\ResolvedIncludeProcessor;
 use MoodleAnalyse\File\FileFinder;
 use MoodleAnalyse\Visitor\PathFindingVisitor;
 use MoodleAnalyse\Visitor\PathResolvingVisitor;
@@ -29,6 +30,8 @@ $processTraverser->addVisitor(new NameResolver());
 $processTraverser->addVisitor(new ParentConnectingVisitor());
 $pathResolvingVisitor = new PathResolvingVisitor();
 $processTraverser->addVisitor($pathResolvingVisitor);
+
+$resolvedIncludeProcessor = new ResolvedIncludeProcessor();
 
 $out = fopen(__DIR__ . '/../relative-paths.csv', 'w');
 
@@ -72,30 +75,8 @@ foreach ($finder->getFileIterator() as $file) {
                 $outputRow[] = '';
             }
 
-            if (preg_match('#^@/?$#', $resolvedInclude)) {
-                $outputRow[] = 'dirroot';
-            } elseif ($resolvedInclude === '@/config.php') {
-                $outputRow[] = 'config';
-            } elseif (preg_match('#^@[\d\w\-/.]+\.\w+$#', $resolvedInclude)) {
-                $outputRow[] = 'simple file';
-            } elseif (preg_match('#^@[\d\w\-/]+/?$#', $resolvedInclude)) {
-                $outputRow[] = 'simple dir';
-            } elseif (preg_match('#^{[^}{]+}$#', $resolvedInclude)) {
-                // e.g. {$somevariable}
-                $outputRow[] = 'single var';
-            } elseif (preg_match('#^@/?{[^}{]+}$#', $resolvedInclude)) {
-                // e.g. @/{$somevariable}
-                $outputRow[] = 'full relative path';
-            } elseif (preg_match('#^.+@#', $resolvedInclude)) {
-                $outputRow[] = 'suspect - embedded @';
-            } elseif (preg_match('#\*#', $resolvedInclude)) {
-                $outputRow[] = 'glob';
-            } elseif (preg_match('#^{[^}{]+}/[^}{]+\.w+$#', $resolvedInclude)) {
-                # e.g. {$fullblock}/db/install.php
-                $outputRow[] = 'fulldir relative';
-            } else {
-                $outputRow[] = '';
-            }
+            $category = $resolvedIncludeProcessor->categorise($resolvedInclude);
+            $outputRow[] = $category ?? '';
 
             // Don't hold a reference to the node.
             unset($parentNode);

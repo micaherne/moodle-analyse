@@ -14,3 +14,12 @@ Exploratory things
 ---
 
 * Introduce a component relative path method and rewrite includes to use it (so that plugins can be loaded from elsewhere)
+
+Plan
+---
+
+* Rewrite paths in place as "canonical" versions and check install and tests still work
+* Introduce core_codebase or whatever, and rewrite simple paths to component paths, and check
+* Investigate the more complex ones and attempt to rewrite, check
+* Introduce "mono" and "composer" modes and attempt to pull some components outside codebase into composer packages (use vendor/installed.php to get the plugin types and locations)
+* Pull all components into composer packages and check install and testing

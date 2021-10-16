@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 namespace MoodleAnalyse\File\Analyse;
 
@@ -10,20 +11,22 @@ use PhpParser\Lexer;
 use PhpParser\NodeTraverser;
 use PhpParser\NodeVisitor\NameResolver;
 use PhpParser\NodeVisitor\ParentConnectingVisitor;
+use PhpParser\Parser;
 use PhpParser\ParserFactory;
+use Symfony\Component\Finder\SplFileInfo;
 
 class Engine
 {
     private string $moodleroot;
     private string $indexDirectory;
-    private $fileFinder;
-    private $lexer;
-    private $parser;
-    private $traverser;
-    private $functionDefinitionAnalyser;
-    private $includeAnalyser;
-    private $componentIdentifier;
-    private $analysers;
+    private FileFinder $fileFinder;
+    private Lexer $lexer;
+    private Parser $parser;
+    private NodeTraverser $traverser;
+    private FunctionDefinitionAnalyser $functionDefinitionAnalyser;
+    private IncludeAnalyser $includeAnalyser;
+    private ComponentIdentifier $componentIdentifier;
+    private array $analysers = [];
 
     /** @var Index[] */
     private array $indexes = [];
@@ -80,7 +83,7 @@ class Engine
 
         $parsedFilesCount = 0;
 
-        /** @var \Symfony\Component\Finder\SplFileInfo $file */
+        /** @var SplFileInfo $file */
         foreach ($this->fileFinder->getFileIterator() as $file) {
             echo sprintf("Analysing file: %s\n", $file->getRelativePathname());
             $fileContents = $file->getContents();
@@ -131,7 +134,7 @@ class Engine
         fclose($out);
     }
 
-    public function addIndex(\MoodleAnalyse\File\Index\BasicObjectIndex $index)
+    public function addIndex(BasicObjectIndex $index)
     {
         $index->setIndexDirectory($this->indexDirectory);
         $this->indexes[] = $index;

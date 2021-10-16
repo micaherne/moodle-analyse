@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 
 namespace MoodleAnalyse\File\Analyse;
 
@@ -8,7 +9,6 @@ use PhpParser\Node;
 use PhpParser\Node\Stmt\Function_;
 use PhpParser\NodeVisitor;
 use PhpParser\NodeVisitor\FindingVisitor;
-use Symfony\Component\Finder\SplFileInfo;
 
 class FunctionDefinitionAnalyser implements FileAnalyser
 {
@@ -55,11 +55,6 @@ class FunctionDefinitionAnalyser implements FileAnalyser
             $result[] = (object) $indexEntry;
         }
         return $result;
-    }
-
-    public function setComponentIdentifier(ComponentIdentifier $componentIdentifier): void
-    {
-        $this->componentIdentifier = $componentIdentifier;
     }
 
     public function setFileDetails(FileDetails $fileDetails): void

@@ -1,7 +1,9 @@
 <?php
+declare(strict_types=1);
 
 namespace MoodleAnalyse\Visitor;
 
+use Exception;
 use JetBrains\PhpStorm\Pure;
 use PhpParser\Node;
 use PhpParser\Node\Expr\Include_;
@@ -48,7 +50,7 @@ class IncludeResolvingVisitor extends FindingVisitor
     }
 
     /**
-     * @throws \Exception
+     * @throws Exception
      */
     public function enterNode(Node $node)
     {
@@ -181,7 +183,7 @@ class IncludeResolvingVisitor extends FindingVisitor
 
     /**
      * @param Node $node
-     * @return string
+     * @return string|null
      */
     private function getPathComponentNoBraces(Node $node): ?string
     {
@@ -196,7 +198,7 @@ class IncludeResolvingVisitor extends FindingVisitor
     {
         $existing = $node->getAttribute(self::INCLUDE_CONTRIBUTION);
         if (!is_null($existing)) {
-            throw new \Exception("Node already has component value");
+            throw new Exception("Node already has component value");
         }
         $node->setAttribute(self::INCLUDE_CONTRIBUTION, $value);
     }
