@@ -194,6 +194,9 @@ class IncludeResolvingVisitor extends FindingVisitor
         return trim($component, '{}');
     }
 
+    /**
+     * @throws Exception
+     */
     private function setPathComponent(Node $node, string $value): void
     {
         $existing = $node->getAttribute(self::INCLUDE_CONTRIBUTION);

@@ -42,13 +42,12 @@ class FileFinder
      */
     private function getThirdPartyLibDirectories(): array
     {
-        $result = [];
         $libFileDirectories = ['lib'];
         $components = json_decode(file_get_contents($this->moodleroot . '/lib/components.json'));
 
         // Find directories that may contain thirdpartylibs.xml files.
         $libFileDirectories = array_merge($libFileDirectories, array_filter(array_values((array) $components->subsystems)));
-        foreach ((array) $components->plugintypes as $plugintype => $plugintypeRoot) {
+        foreach ((array) $components->plugintypes as $plugintypeRoot) {
             $dirs = scandir($this->moodleroot . '/' . $plugintypeRoot);
             foreach ($dirs as $dir) {
                 if (str_starts_with($dir, '.')) {

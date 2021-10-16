@@ -9,7 +9,6 @@ use PhpParser\Node;
 use PhpParser\NodeTraverser;
 use PhpParser\NodeVisitor\NameResolver;
 use PhpParser\NodeVisitor\ParentConnectingVisitor;
-use PhpParser\NodeVisitorAbstract;
 use PhpParser\ParserFactory;
 
 require_once __DIR__ . '/../vendor/autoload.php';
@@ -34,9 +33,13 @@ $processTraverser->addVisitor($pathResolvingVisitor);
 $resolvedIncludeProcessor = new ResolvedIncludeProcessor();
 
 $out = fopen(__DIR__ . '/../relative-paths.csv', 'w');
+if ($out === false) {
+    die("Unable to open CSV\n");
+}
 
 fputcsv($out, ['Relative filename', 'Path start line', 'Path end line', 'Path code', 'Resolved include',
-    'Parent code', 'Parent start line', 'Parent end line', 'Parent function call', 'Category']);
+    'Parent code', 'Parent start line', 'Parent end line', 'Parent function call', 'Category', 'From core component',
+    'Assigned from previous path var']);
 /** @var \Symfony\Component\Finder\SplFileInfo $file */
 foreach ($finder->getFileIterator() as $file) {
     $relativePathname = str_replace('\\', '/', $file->getRelativePathname());
@@ -77,6 +80,9 @@ foreach ($finder->getFileIterator() as $file) {
 
             $category = $resolvedIncludeProcessor->categorise($resolvedInclude);
             $outputRow[] = $category ?? '';
+
+            $outputRow[] = is_null($pathNode->getAttribute(PathResolvingVisitor::FROM_CORE_COMPONENT)) ? '' : 'yes';
+            $outputRow[] = is_null($pathNode->getAttribute(PathResolvingVisitor::ASSIGNED_FROM_PATH_VAR)) ? '' : 'yes';
 
             // Don't hold a reference to the node.
             unset($parentNode);

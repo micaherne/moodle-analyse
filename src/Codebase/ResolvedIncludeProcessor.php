@@ -31,6 +31,9 @@ class ResolvedIncludeProcessor
         } elseif (preg_match('#^@/(([^/]*)/)*[^/}{]*\.\w+$#', $resolvedInclude)) {
             # e.g. {$fullblock}/db/install.php
             return 'simple dynamic file';
+        } elseif (preg_match('#^@/[^}{]+/{[^}{]+}\.\w+$#', $resolvedInclude)) {
+            # e.g. @/completion/criteria/{$object}.php
+            return 'filename substitution';
         } else {
             return null;
         }

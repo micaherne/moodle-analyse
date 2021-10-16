@@ -32,6 +32,9 @@ class BasicObjectIndex implements Index
         return $this->sources;
     }
 
+    /**
+     * @throws Exception
+     */
     public function index($analysis, ?string $sourceClass = null) {
         if (!is_null($sourceClass) && !in_array($sourceClass, $this->sources)) {
             throw new Exception("Unsupported class $sourceClass");

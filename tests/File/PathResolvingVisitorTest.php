@@ -60,6 +60,162 @@ class PathResolvingVisitorTest extends TestCase
 
     }
 
+    public function coreComponentCheckingProvider()
+    {
+        yield [
+            'backup/util/plan/backup_structure_step.class.php',
+            <<<'EOD'
+            $pluginsdirs = core_component::get_plugin_list($plugintype);
+            foreach ($pluginsdirs as $name => $plugindir) {
+                $classname = 'backup_' . $plugintype . '_' . $name . '_plugin';
+                $backupfile = $plugindir . '/backup/moodle2/' . $classname . '.class.php';
+                if (file_exists($backupfile)) {
+                    require_once($backupfile);
+                }
+            }
+            EOD,
+            function ($pathNodes) {
+                $require = $pathNodes[0];
+                $attribute = $require->getAttribute('fromCoreComponent');
+                $this->assertTrue($attribute);
+            }
+        ];
+
+        yield [
+            'lib/portfoliolib.php',
+            <<<'EOD'
+            if (!$componentloc = core_component::get_component_directory($component)) {
+                throw new portfolio_button_exception('nocallbackcomponent', 'portfolio', '', $component);
+            }
+            require_once($componentloc . '/locallib.php');
+            EOD,
+            function($pathNodes) {
+                $require = $pathNodes[0];
+                $attribute = $require->getAttribute('fromCoreComponent');
+                $this->assertTrue($attribute);
+            }
+        ];
+
+        yield [
+            'lib/accesslib.php',
+            <<<'EOD'
+            $base = core_component::get_plugin_directory($type, $name);
+            include("{$base}/db/subplugins.php");
+            EOD,
+            function($pathNodes) {
+                $require = $pathNodes[0];
+                $attribute = $require->getAttribute('fromCoreComponent');
+                $this->assertTrue($attribute);
+            }
+        ];
+
+        yield [
+            '',
+            <<<'EOD'
+            $plugins = \core_component::get_plugin_list('cachestore');
+                if (!array_key_exists($plugin, $plugins)) {
+                    throw new \coding_exception('Invalid cache plugin used when trying to create an edit form.');
+                }
+                $plugindir = $plugins[$plugin];
+                $class = 'cachestore_addinstance_form';
+                if (file_exists($plugindir.'/addinstanceform.php')) {
+                    require_once($plugindir.'/addinstanceform.php');
+                }
+            EOD,
+            function($pathNodes) {
+                $require = $pathNodes[0];
+                $attribute = $require->getAttribute('fromCoreComponent');
+                $this->assertTrue($attribute);
+            }
+
+        ];
+
+        yield [
+            'mod/example/lib.php',
+            <<<'EOD'
+            foreach (core_component::get_plugin_list('mod') as $plugindir) {
+                require_once($plugindir . '/lib.php');
+            }
+            EOD,
+            function($pathNodes) {
+                $require = $pathNodes[0];
+                $attribute = $require->getAttribute('fromCoreComponent');
+                $this->assertTrue($attribute);
+            }
+
+        ];
+
+        yield [
+            'mod/example/lib.php',
+            <<<'EOD'
+            $plugins = core_component::get_plugin_list('mod');
+            foreach ($plugins as $plugindir) {
+                require_once($plugindir . '/lib.php');
+            }
+            EOD,
+            function($pathNodes) {
+                $require = $pathNodes[0];
+                $attribute = $require->getAttribute('fromCoreComponent');
+                $this->assertTrue($attribute);
+            }
+
+        ];
+
+        yield [
+            'mod/example/lib.php',
+            <<<'EOD'
+            $plugins = core_component::get_plugin_list('mod');
+            require_once($plugins['name'] . '/lib.php');
+            EOD,
+            function($pathNodes) {
+                $require = $pathNodes[0];
+                $attribute = $require->getAttribute('fromCoreComponent');
+                $this->assertTrue($attribute);
+            }
+
+        ];
+
+        yield [
+            'mod/example/lib.php',
+            <<<'EOD'
+            $plugins = core_component::get_plugin_list('mod');
+            $name = 'name';
+            require_once($plugins[$name] . '/lib.php');
+            EOD,
+            function($pathNodes) {
+                $require = $pathNodes[0];
+                $attribute = $require->getAttribute('fromCoreComponent');
+                $this->assertTrue($attribute);
+            }
+
+        ];
+
+    }
+
+    /**
+     * @dataProvider coreComponentCheckingProvider
+     * @param string $path
+     * @param string $code
+     * @param callable $check
+     */
+    public function testCoreComponentChecking(string $path, string $code, callable $check) {
+        $visitor = new PathResolvingVisitor();
+        $visitor->setFilePath($path);
+
+        $this->traverser->addVisitor($visitor);
+        $nodes = $this->parser->parse("<?php {$code}");
+
+        $this->preProcessor->addVisitor($this->parentConnectingVisitor);
+        $this->preProcessor->addVisitor(new PathFindingVisitor());
+        $nodes = $this->preProcessor->traverse($nodes);
+
+        $this->traverser->traverse($nodes);
+
+        $pathNodes = $visitor->getPathNodes();
+
+        $check($pathNodes);
+    }
+
     public function requireDataProvider(): \Generator
     {
 

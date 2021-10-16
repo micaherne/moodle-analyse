@@ -26,6 +26,7 @@ class ResolvedIncludeProcessorTest extends TestCase
         yield ['@/', 'dirroot'];
         yield ['@/config.php', 'config'];
         yield ['@/lib/moodlelib.php', 'simple file'];
+        yield ['@/filter/tex/mimetex.linux.aarch64', 'simple file'];
         yield ['@/lib/editor', 'simple dir'];
         yield ['{$fullpath}', 'single var'];
         yield ['@/{$somevariable}', 'full relative path'];
@@ -35,5 +36,6 @@ class ResolvedIncludeProcessorTest extends TestCase
         yield ['@/blocks/{$blockname}/version.php', 'simple dynamic file'];
         yield ['@/mod/{$modname}/backup/moodle1/lib.php', 'simple dynamic file'];
         yield ['@/mod/{$data[\'modulename\']}/version.php', 'simple dynamic file'];
+        yield ['@/completion/criteria/{$object}.php', 'filename substitution'];
     }
 }

@@ -3,7 +3,6 @@ declare(strict_types=1);
 
 namespace MoodleAnalyse\File\Analyse;
 
-use MoodleAnalyse\Codebase\ComponentIdentifier;
 use MoodleAnalyse\File\Index\BasicObjectIndex;
 use PhpParser\Node;
 use PhpParser\Node\Stmt\Function_;

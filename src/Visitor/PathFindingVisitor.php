@@ -100,8 +100,6 @@ class PathFindingVisitor extends NodeVisitorAbstract {
             }
         }
 
-        // echo "arse";
-
         return $this->findRelevantParent($parent);
 
     }

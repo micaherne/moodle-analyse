@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace MoodleAnalyse\File\Analyse;
 
+use Exception;
 use MoodleAnalyse\Codebase\ComponentIdentifier;
 use MoodleAnalyse\File\FileFinder;
 use MoodleAnalyse\File\Index\BasicObjectIndex;
@@ -78,6 +79,9 @@ class Engine
         }
     }
 
+    /**
+     * @throws Exception
+     */
     public function execute() {
         $requireCounts = [];
 
@@ -96,7 +100,7 @@ class Engine
             }
 
             $nodes = $this->parser->parse($fileContents);
-            $n = $this->traverser->traverse($nodes);
+            $this->traverser->traverse($nodes);
 
             foreach ($this->analysers as $analyser) {
                 $analysis = $analyser->getAnalysis();
