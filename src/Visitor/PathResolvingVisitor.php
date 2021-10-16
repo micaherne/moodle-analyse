@@ -201,7 +201,7 @@ class PathResolvingVisitor extends NodeVisitorAbstract
                 if (array_key_exists($matches[1], $pluginListVars)
                     && in_array($pluginListVars[$matches[1]], [self::COMPONENT_ITERATOR, self::COMPONENT_INSTANCE])) {
                     $node->setAttribute(self::FROM_CORE_COMPONENT, true);
-                } else if (str_contains($matches[1], '[')) {
+                } elseif (str_contains($matches[1], '[')) {
                     $withoutDim = substr($matches[1], 0, strpos($matches[1], '['));
                     if (array_key_exists($withoutDim, $pluginListVars) && $pluginListVars[$withoutDim] === self::COMPONENT_INSTANCE) {
                         $node->setAttribute(self::FROM_CORE_COMPONENT, true);
@@ -386,16 +386,16 @@ class PathResolvingVisitor extends NodeVisitorAbstract
                 $parent = $node->getAttribute('parent');
                 if ($parent instanceof Node\Stmt\Foreach_) {
                     $currentScope->getPluginListVars[$parent->valueVar->name] = self::COMPONENT_ITERATOR;
-                } else if ($parent instanceof Node\Expr\Assign) {
+                } elseif ($parent instanceof Node\Expr\Assign) {
                     $currentScope->getPluginListVars[$parent->var->name] = self::COMPONENT_ASSIGNMENT;
-                } else if ($parent instanceof Node\Arg) {
+                } elseif ($parent instanceof Node\Arg) {
                     // Seems to be mostly array_keys and array_key_exists, which we don't need to care about.
                     echo "what happens here?";
                 } else {
                     // Can be return, e.g. get_plugin_list() in deprecatedlib.php
                     echo "what happens here?";
                 }
-            } else if ($node->name instanceof Node\Identifier && ($node->name->name === 'get_plugin_directory' ||
+            } elseif ($node->name instanceof Node\Identifier && ($node->name->name === 'get_plugin_directory' ||
                     $node->name->name === 'get_component_directory')) {
                 $parent = $node->getAttribute('parent');
                 if ($parent instanceof Node\Expr\Assign) {
@@ -418,7 +418,7 @@ class PathResolvingVisitor extends NodeVisitorAbstract
                     if (array_key_exists($node->var->name, $currentScope->getPluginListVars)) {
                         if ($node->dim instanceof Node\Scalar\String_) {
                             $currentScope->getPluginListVars[$node->var->name . '[\'' . $node->dim->value . '\']'] = self::COMPONENT_INSTANCE;
-                        } else if ($node->dim instanceof Node\Expr\Variable) {
+                        } elseif ($node->dim instanceof Node\Expr\Variable) {
                             $currentScope->getPluginListVars[$node->var->name . '[$' . $node->dim->name . ']'] = self::COMPONENT_INSTANCE;
                         }
                     }
@@ -428,7 +428,7 @@ class PathResolvingVisitor extends NodeVisitorAbstract
                     if (array_key_exists($node->expr->var->name, $currentScope->getPluginListVars)) {
                         $currentScope->getPluginListVars[$node->var->name] = self::COMPONENT_INSTANCE;
                     }
-                } else if ($node->expr instanceof Node\Expr\BinaryOp\Concat) {
+                } elseif ($node->expr instanceof Node\Expr\BinaryOp\Concat) {
                     $concatNode = $node->expr;
                     // We only care about the left side as that is the only bit that can realistically
                     // be a directory from core_component.
@@ -440,8 +440,14 @@ class PathResolvingVisitor extends NodeVisitorAbstract
                             $currentScope->getPluginListVars[$node->var->name] = self::COMPONENT_INSTANCE;
                         }
                     }
+                } elseif ($node->expr instanceof Node\Scalar\Encapsed) {
+                    if ($node->expr->parts[0] instanceof Node\Expr\Variable) {
+                        if (array_key_exists($node->expr->parts[0]->name, $currentScope->getPluginListVars)) {
+                            $currentScope->getPluginListVars[$node->var->name] = self::COMPONENT_INSTANCE;
+                        }
+                    }
                 }
-            }
+            } 
         }
     }
 
@@ -474,7 +480,7 @@ class PathResolvingVisitor extends NodeVisitorAbstract
             $args = $this->getArgValues($node);
             $this->overridePathComponent($node, '{' . $this->getPathComponentNoBraces($node->var) . '->'
                 . $node->name->name . '(' . implode(', ', $args) . ')}');
-        } else if ($node instanceof Node\Expr\StaticCall) {
+        } elseif ($node instanceof Node\Expr\StaticCall) {
             $args = $this->getArgValues($node);
             if ($node->class instanceof Node\Name && $node->name instanceof Node\Identifier) {
                 $this->overridePathComponent($node, '{' . $node->class->toCodeString()
@@ -499,7 +505,7 @@ class PathResolvingVisitor extends NodeVisitorAbstract
                     $this->overridePathComponent($node, '{$CFG->' . $node->name->name . '}');
                 }
             }
-        } else if ($node instanceof Node\Expr\ClassConstFetch) {
+        } elseif ($node instanceof Node\Expr\ClassConstFetch) {
             if ($node->class instanceof Node\Name && $node->name instanceof Node\Identifier) {
                 $this->overridePathComponent($node, '{' . $node->class->toCodeString()
                     . '::' . $node->name->toString() . '}');

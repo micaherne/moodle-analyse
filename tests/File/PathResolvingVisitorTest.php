@@ -63,6 +63,21 @@ class PathResolvingVisitorTest extends TestCase
     public function coreComponentCheckingProvider()
     {
         yield [
+            'admin/settings.php',
+            <<<'EOD'
+            foreach (core_component::get_plugin_list('report') as $report => $plugindir) {
+                $settings_path = "$plugindir/settings.php";
+                require($settings_path);
+            }
+            EOD,
+            function ($pathNodes) {
+                $require = $pathNodes[0];
+                $attribute = $require->getAttribute('fromCoreComponent');
+                $this->assertTrue($attribute);
+            }
+        ];
+
+        yield [
             'backup/util/plan/backup_structure_step.class.php',
             <<<'EOD'
             $pluginsdirs = core_component::get_plugin_list($plugintype);
