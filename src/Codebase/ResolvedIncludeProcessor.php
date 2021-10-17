@@ -9,7 +9,7 @@ class ResolvedIncludeProcessor
     const QUOTE = '\'';
 
     public function categorise(string $resolvedInclude): ?string {
-        if (preg_match('#^@/?$#', $resolvedInclude)) {
+        if (preg_match('#^@[/\\\\]?$#', $resolvedInclude)) {
             return 'dirroot';
         } elseif ($resolvedInclude === '@/config.php') {
             return 'config';
@@ -41,7 +41,15 @@ class ResolvedIncludeProcessor
         }
     }
 
-    public function toCodeString(string $resolvedInclude) {
+    /**
+     * Create a string of PHP code for a given resolved include.
+     *
+     * This is simply the "canonical" version of the path given.
+     *
+     * @param string $resolvedInclude
+     * @return string
+     */
+    public function toCodeString(string $resolvedInclude): string {
         $resultParts = [];
 
         // Easier to split to avoid having to deal with partial words (e.g. $CFG->library)
@@ -58,11 +66,13 @@ class ResolvedIncludeProcessor
                         $resultParts[] = '$CFG->libdir';
                         array_shift($includeParts);
                         break;
+
                     case 'admin':
                         $resultParts[] = '$CFG->dirroot';
                         $resultParts[] = '$CFG->admin';
                         array_shift($includeParts);
                         break;
+
                     default:
                         $resultParts[] = '$CFG->dirroot';
                 }
@@ -105,31 +115,7 @@ class ResolvedIncludeProcessor
         $result = implode(' . \'/\' . ', $resultParts);
 
         // Merge consecutive strings.
-        $result = str_replace(self::QUOTE . ' . ' . self::QUOTE, '', $result);
-        return $result;
-    }
-
-    /**
-     * @param string $includePart
-     * @return false|int
-     * @throws \Exception
-     */
-    private function partIsVariable(string $includePart): bool
-    {
-        $result = preg_match('#{(.+)}#', $includePart);
-        if ($result === false) {
-            throw new \Exception("Error checking part $includePart");
-        }
-        return (bool) $result;
-    }
-
-    /**
-     * @param string $includePart
-     * @return string
-     */
-    private function removeBraces(string $includePart): string
-    {
-        return trim($includePart, '{}');
+        return str_replace(self::QUOTE . ' . ' . self::QUOTE, '', $result);
     }
 
 }

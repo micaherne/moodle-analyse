@@ -5,6 +5,7 @@ namespace MoodleAnalyse\File;
 use MoodleAnalyse\Visitor\IncludeResolvingVisitor;
 use MoodleAnalyse\Visitor\PathFindingVisitor;
 use MoodleAnalyse\Visitor\PathResolvingVisitor;
+use PhpParser\Node\Scalar\Encapsed;
 use PhpParser\NodeTraverser;
 use PhpParser\NodeVisitor\ParentConnectingVisitor;
 use PhpParser\Parser;
@@ -35,26 +36,13 @@ class PathResolvingVisitorTest extends TestCase
         unset($this->parentConnectingVisitor);
     }
 
-
     /**
      * @dataProvider requireDataProvider
      */
     public function testResolve($path, $require, $expected, $message = '')
     {
 
-        $visitor = new PathResolvingVisitor();
-        $visitor->setFilePath($path);
-
-        $this->traverser->addVisitor($visitor);
-        $nodes = $this->parser->parse("<?php {$require};");
-
-        $this->preProcessor->addVisitor($this->parentConnectingVisitor);
-        $this->preProcessor->addVisitor(new PathFindingVisitor());
-        $nodes = $this->preProcessor->traverse($nodes);
-
-        $this->traverser->traverse($nodes);
-
-        $pathNodes = $visitor->getPathNodes();
+        $pathNodes = $this->getPathNodes($path, $require);
 
         $this->assertEquals($expected, $pathNodes[0]->getAttribute(IncludeResolvingVisitor::RESOLVED_INCLUDE), $message);
 
@@ -231,7 +219,7 @@ class PathResolvingVisitorTest extends TestCase
             'repository/upload/tests/behat/behat_repository_upload.php',
             '$filepath = $CFG->dirroot . DIRECTORY_SEPARATOR . $CFG->admin .
                     DIRECTORY_SEPARATOR . substr($filepath, 6)',
-            '@/admin/{substr($filepath, 6)}'
+            '@{DIRECTORY_SEPARATOR}admin{DIRECTORY_SEPARATOR}{substr($filepath, 6)}'
         ];
 
         // We're never going to rewrite core_component but it would be good if this structure worked.
@@ -300,7 +288,7 @@ class PathResolvingVisitorTest extends TestCase
         yield [
             'lib/somelib.php',
             'require($CFG->dirroot . DIRECTORY_SEPARATOR . "config.php")',
-            '@/config.php'
+            '@{DIRECTORY_SEPARATOR}config.php'
         ];
 
         yield [
@@ -398,5 +386,32 @@ class PathResolvingVisitorTest extends TestCase
         fclose($in);
     }
 
+    public function testMarkAsConfigInclude() {
+        $nodes = $this->getPathNodes('admin/test.php', 'require(__DIR__ . \'/../config.php\');');
+        $this->assertTrue($nodes[0]->getAttribute('parent')->getAttribute(PathResolvingVisitor::IS_CONFIG_INCLUDE));
+    }
+
+    /**
+     * @param $path
+     * @param $require
+     * @return \PhpParser\Node[]
+     */
+    private function getPathNodes($path, $code): array
+    {
+        $visitor = new PathResolvingVisitor();
+        $visitor->setFilePath($path);
+
+        $this->traverser->addVisitor($visitor);
+        $nodes = $this->parser->parse("<?php $code;");
+
+        $this->preProcessor->addVisitor($this->parentConnectingVisitor);
+        $this->preProcessor->addVisitor(new PathFindingVisitor());
+        $nodes = $this->preProcessor->traverse($nodes);
+
+        $this->traverser->traverse($nodes);
+
+        $pathNodes = $visitor->getPathNodes();
+        return $pathNodes;
+    }
 
 }

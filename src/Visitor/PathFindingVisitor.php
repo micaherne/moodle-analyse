@@ -11,6 +11,8 @@ use PhpParser\NodeVisitorAbstract;
  */
 class PathFindingVisitor extends NodeVisitorAbstract {
 
+    public const IS_CODEPATH_NODE = 'isCodepathNode';
+
     private array $pathNodes;
 
     public function beforeTraverse(array $nodes)
@@ -100,6 +102,10 @@ class PathFindingVisitor extends NodeVisitorAbstract {
             }
         }
 
+        if ($parent instanceof Node\Expr\Ternary) {
+            return $node;
+        }
+
         return $this->findRelevantParent($parent);
 
     }
@@ -134,7 +140,7 @@ class PathFindingVisitor extends NodeVisitorAbstract {
      */
     private function markAsCodePath(Node $node): void
     {
-        $node->setAttribute('isCodepathNode', true);
+        $node->setAttribute(self::IS_CODEPATH_NODE, true);
     }
 
     /**

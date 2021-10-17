@@ -48,7 +48,8 @@ class PathResolvingVisitor extends NodeVisitorAbstract
     public const FROM_CORE_COMPONENT = 'fromCoreComponent';
     /** @var string this uses a variable that was assigned from a previously identified path */
     public const ASSIGNED_FROM_PATH_VAR = 'assignedPathVariable';
-    const IS_CODEPATH_NODE = 'isCodepathNode';
+
+    public const IS_CONFIG_INCLUDE = 'isConfigInclude';
 
     private string $filePath;
 
@@ -142,11 +143,13 @@ class PathResolvingVisitor extends NodeVisitorAbstract
         } elseif ($node instanceof Node\Scalar\MagicConst\File) {
             $this->setPathComponent($node, '@/' . $this->filePath);
         } elseif ($node instanceof Node\Expr\ConstFetch) {
-            if ($node->name->parts[0] === 'DIRECTORY_SEPARATOR') {
-                $this->setPathComponent($node, '/');
-            } else {
+            // Disable DIRECTORY_SEPARATOR check at the moment.
+            // This is fine for includes, but can cause problems with strpos etc.
+            // if ($node->name->parts[0] === 'DIRECTORY_SEPARATOR') {
+            //     $this->setPathComponent($node, '/');
+            // } else {
                 $this->setPathComponent($node, '{' . $node->name->toCodeString() . '}');
-            }
+            // }
         } elseif ($node instanceof Node\Expr\ClassConstFetch) {
             if ($node->class instanceof Node\Name && $node->name instanceof Node\Identifier) {
                 $this->setPathComponent($node, '{' . $node->class->toCodeString()
@@ -214,7 +217,8 @@ class PathResolvingVisitor extends NodeVisitorAbstract
                 }
             }
 
-            if ($resolvedInclude === '@/config.php') {
+            if ($resolvedInclude === '@/config.php' && $expressionNode instanceof Node\Expr\Include_) {
+                $expressionNode->setAttribute(self::IS_CONFIG_INCLUDE, true);
                 $this->afterConfigInclude = true;
             }
             $this->pathNodes[] = $node;
@@ -232,6 +236,10 @@ class PathResolvingVisitor extends NodeVisitorAbstract
         }
 
         $parent = $node->getAttribute('parent');
+
+        if ($parent instanceof Node\Expr\Ternary) {
+            return $node;
+        }
 
         if ($parent instanceof Node\Expr) {
             return $parent;
@@ -352,7 +360,8 @@ class PathResolvingVisitor extends NodeVisitorAbstract
      */
     private function isPathNode(Node $node): bool
     {
-        return $node->hasAttribute(self::IS_CODEPATH_NODE) && $node->getAttribute(self::IS_CODEPATH_NODE);
+        return $node->hasAttribute(PathFindingVisitor::IS_CODEPATH_NODE)
+            && $node->getAttribute(PathFindingVisitor::IS_CODEPATH_NODE);
     }
 
     /**

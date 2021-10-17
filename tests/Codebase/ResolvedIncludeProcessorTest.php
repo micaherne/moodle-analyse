@@ -35,6 +35,7 @@ class ResolvedIncludeProcessorTest extends TestCase
 
         yield ['@', 'dirroot'];
         yield ['@/', 'dirroot'];
+        yield ['@\\', 'dirroot'];
         yield ['@/config.php', 'config'];
         yield ['@/lib/moodlelib.php', 'simple file'];
         yield ['@/filter/tex/mimetex.linux.aarch64', 'simple file'];
@@ -52,6 +53,7 @@ class ResolvedIncludeProcessorTest extends TestCase
 
     public function toCodeStringTestData()
     {
+        yield ['', '\'\''];
         yield ['@{$themetestdir}{self::get_behat_tests_path()}', '$CFG->dirroot . $themetestdir . self::get_behat_tests_path()'];
         yield ['@/{\BEHAT_PARALLEL_SITE_NAME}{$i}', '$CFG->dirroot . \'/\' . \BEHAT_PARALLEL_SITE_NAME . $i'];
         yield ['{$path}/db/mobile.php', '$path . \'/db/mobile.php\''];

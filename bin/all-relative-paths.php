@@ -38,7 +38,7 @@ if ($out === false) {
 }
 
 fputcsv($out, ['Relative filename', 'Path start line', 'Path end line', 'Path code', 'Resolved include',
-    'Parent code', 'Parent start line', 'Parent end line', 'Parent function call', 'Category', 'From core component',
+    'Parent code', 'Parent start line', 'Parent end line', 'Parent function call', 'Config include?', 'Category', 'Rewrite code', 'From core component',
     'Assigned from previous path var']);
 /** @var \Symfony\Component\Finder\SplFileInfo $file */
 foreach ($finder->getFileIterator() as $file) {
@@ -78,15 +78,23 @@ foreach ($finder->getFileIterator() as $file) {
                 $outputRow[] = '';
             }
 
-            $category = $resolvedIncludeProcessor->categorise($resolvedInclude);
-            $outputRow[] = $category ?? '';
-
-            $outputRow[] = is_null($pathNode->getAttribute(PathResolvingVisitor::FROM_CORE_COMPONENT)) ? '' : 'yes';
-            $outputRow[] = is_null($pathNode->getAttribute(PathResolvingVisitor::ASSIGNED_FROM_PATH_VAR)) ? '' : 'yes';
+            $outputRow[] = $parentNode->getAttribute(PathResolvingVisitor::IS_CONFIG_INCLUDE) ? 'config include' : '';
 
             // Don't hold a reference to the node.
             unset($parentNode);
+        } else {
+            $outputRow = array_fill(count($outputRow), 5, '');
         }
+
+        $codeString = $resolvedIncludeProcessor->categorise($resolvedInclude);
+        $outputRow[] = $codeString ?? '';
+
+        $codeString = $resolvedIncludeProcessor->toCodeString($resolvedInclude);
+        $outputRow[] = $codeString ?? '';
+
+        $outputRow[] = is_null($pathNode->getAttribute(PathResolvingVisitor::FROM_CORE_COMPONENT)) ? '' : 'yes';
+        $outputRow[] = is_null($pathNode->getAttribute(PathResolvingVisitor::ASSIGNED_FROM_PATH_VAR)) ? '' : 'yes';
+
         fputcsv($out, $outputRow);
     }
 }
