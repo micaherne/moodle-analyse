@@ -19,6 +19,17 @@ class ResolvedIncludeProcessorTest extends TestCase
         $this->assertEquals($expectedCategory, $category);
     }
 
+    /**
+     * @dataProvider toCodeStringTestData
+     * @param string $resolvedInclude
+     * @param string $expectedOutput
+     */
+    public function testToCodeString(string $resolvedInclude, string $expectedOutput) {
+        $processor = new ResolvedIncludeProcessor();
+        $output = $processor->toCodeString($resolvedInclude);
+        $this->assertEquals($expectedOutput, $output);
+    }
+
     public function categoriseTestData()
     {
 
@@ -37,5 +48,19 @@ class ResolvedIncludeProcessorTest extends TestCase
         yield ['@/mod/{$modname}/backup/moodle1/lib.php', 'simple dynamic file'];
         yield ['@/mod/{$data[\'modulename\']}/version.php', 'simple dynamic file'];
         yield ['@/completion/criteria/{$object}.php', 'filename substitution'];
+    }
+
+    public function toCodeStringTestData()
+    {
+        yield ['@{$themetestdir}{self::get_behat_tests_path()}', '$CFG->dirroot . $themetestdir . self::get_behat_tests_path()'];
+        yield ['@/{\BEHAT_PARALLEL_SITE_NAME}{$i}', '$CFG->dirroot . \'/\' . \BEHAT_PARALLEL_SITE_NAME . $i'];
+        yield ['{$path}/db/mobile.php', '$path . \'/db/mobile.php\''];
+        yield ['{$this->full_path(\'settings.php\')}', '$this->full_path(\'settings.php\')'];
+        yield ['@/install/lang/{$options[\'lang\']}', '$CFG->dirroot . \'/install/lang/\' . $options[\'lang\']'];
+        yield ['@/blocks/{$blockname}/block_{$blockname}.php', '$CFG->dirroot . \'/blocks/\' . $blockname . \'/block_\' . $blockname . \'.php\''];
+        yield ['@', '$CFG->dirroot'];
+        yield ['@/mod/assign/lib.php', '$CFG->dirroot . \'/mod/assign/lib.php\''];
+        yield ['@/lib', '$CFG->libdir'];
+        yield ['@/admin', '$CFG->dirroot . \'/\' . $CFG->admin'];
     }
 }
