@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace MoodleAnalyse\Codebase;
 
+use Symfony\Component\Finder\SplFileInfo;
+
 class ResolvedIncludeProcessor
 {
 
@@ -49,8 +51,14 @@ class ResolvedIncludeProcessor
      * @param string $resolvedInclude
      * @return string
      */
-    public function toCodeString(string $resolvedInclude): string {
+    public function toCodeString(string $resolvedInclude, ?string $filePath = null): string {
+
+        if (!is_null($filePath) && $resolvedInclude === '@/config.php') {
+            return '__DIR__ . \'' . str_repeat('/..', substr_count($filePath, '/')) . '/config.php\'';
+        }
+
         $resultParts = [];
+
 
         // Easier to split to avoid having to deal with partial words (e.g. $CFG->library)
         $includeParts = explode('/', $resolvedInclude);

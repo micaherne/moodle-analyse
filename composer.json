@@ -19,11 +19,12 @@
   ],
   "require": {
     "php": "^8.0",
+    "nikic/php-parser": "^4.13",
     "symfony/cache": "^5.3",
     "symfony/console": "^5.3",
-    "nikic/php-parser": "^4.13",
     "symfony/finder": "^5.3",
     "symfony/filesystem": "^5.3",
+    "symfony/process": "^5.3",
     "ext-simplexml": "*"
   },
   "require-dev": {

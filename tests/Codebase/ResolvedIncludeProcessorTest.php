@@ -30,6 +30,14 @@ class ResolvedIncludeProcessorTest extends TestCase
         $this->assertEquals($expectedOutput, $output);
     }
 
+    public function testToCodeStringConfig() {
+        $processor = new ResolvedIncludeProcessor();
+        $this->assertEquals('__DIR__ . \'/../../config.php\'',
+            $processor->toCodeString('@/config.php', 'lib/test/something.php'));
+        $this->assertEquals('__DIR__ . \'/config.php\'',
+            $processor->toCodeString('@/config.php', 'index.php'));
+    }
+
     public function categoriseTestData()
     {
 
