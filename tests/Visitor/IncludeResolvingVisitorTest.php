@@ -1,6 +1,6 @@
 <?php
 
-namespace MoodleAnalyse\File;
+namespace MoodleAnalyse\Visitor;
 
 use MoodleAnalyse\Visitor\IncludeResolvingVisitor;
 use PhpParser\NodeTraverser;

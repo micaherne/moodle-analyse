@@ -48,19 +48,30 @@ class PathResolvingVisitor extends NodeVisitorAbstract
 
     /** @var string this uses a variable that has come from a core_component call */
     public const FROM_CORE_COMPONENT = 'fromCoreComponent';
+
     /** @var string this uses a variable that was assigned from a previously identified path */
     public const ASSIGNED_FROM_PATH_VAR = 'assignedPathVariable';
 
     public const IS_CONFIG_INCLUDE = 'isConfigInclude';
+    const GLOBAL_VARIABLES = 'globalVariables';
+
+    /** @var string has core_component::get_plugin_list() been called in this scope? */
+    const CORE_COMPONENT_CALLED = 'coreComponentCalled';
+
+    /**
+     * @var string do we *know* that $CFG is available at this point?
+     * This is useful for checking whether we can substitute a $CFG->dirroot path.
+     */
+    public const CFG_AVAILABLE = 'cfgAvailable';
+
+    /** @var string has the $CFG variable been accessed at this point in the scope? */
+    const CFG_USED = 'cfgUsed';
 
     private string $filePath;
 
     private bool $insidePathNode = false;
 
     private bool $afterConfigInclude = false;
-
-    /** @var bool has core_component::get_plugin_list() been called in this file? */
-    private bool $coreComponentCalled = false;
 
     /** @var Node[] */
     private array $pathNodes;
@@ -70,7 +81,6 @@ class PathResolvingVisitor extends NodeVisitorAbstract
     public function beforeTraverse(array $nodes)
     {
         $this->afterConfigInclude = false;
-        $this->coreComponentCalled = false;
         $this->pathNodes = [];
         $this->scopeStack = new SplStack();
         $this->addScope();
@@ -78,9 +88,13 @@ class PathResolvingVisitor extends NodeVisitorAbstract
 
     private function addScope()
     {
+        // We have to get a reference to this when changing it, so an object is easier.
         $this->scopeStack->push((object)[
             self::GET_PLUGIN_LIST_VARS => [],
-            self::ASSIGNED_PATH_VARS => []
+            self::ASSIGNED_PATH_VARS => [],
+            self::GLOBAL_VARIABLES => [],
+            self::CFG_USED => false,
+            self::CORE_COMPONENT_CALLED => false,
         ]);
     }
 
@@ -98,6 +112,23 @@ class PathResolvingVisitor extends NodeVisitorAbstract
 
         if ($node instanceof Node\FunctionLike) {
             $this->addScope();
+        }
+
+        $currentScope = $this->scopeStack->top();
+
+        if ($node instanceof Node\Stmt\Global_) {
+            foreach ($node->vars as $var) {
+                if ($var instanceof Node\Expr\Variable) {
+
+                    $currentScope->{self::GLOBAL_VARIABLES}[$var->name] = 1;
+                }
+            }
+        }
+
+        if ($node instanceof Node\Expr\PropertyFetch) {
+            if ($node->var instanceof Node\Expr\Variable && $node->var->name === 'CFG') {
+                $currentScope->{self::CFG_USED} = true;
+            }
         }
 
         $this->checkForCoreComponentCalls($node);
@@ -172,7 +203,6 @@ class PathResolvingVisitor extends NodeVisitorAbstract
 
         if ($node instanceof Node\FunctionLike) {
             $this->scopeStack->pop();
-            $this->coreComponentCalled = false;
         }
 
         if (!$this->insidePathNode) {
@@ -192,18 +222,26 @@ class PathResolvingVisitor extends NodeVisitorAbstract
             $node->setAttribute(self::RESOLVED_INCLUDE, $resolvedInclude);
             $expressionNode = $this->findParentExpressionNode($node);
 
+            $currentScope = $this->scopeStack->top();
+
+            // Check whether we know that $CFG is available at this point.
+            if (isset($currentScope->{self::GLOBAL_VARIABLES}['CFG'])) {
+                $node->setAttribute(self::CFG_AVAILABLE, true);
+            } elseif ($currentScope->{self::CFG_USED}) {
+                $node->setAttribute(self::CFG_AVAILABLE, true);
+            }
+
             if (!is_null($expressionNode)) {
                 $node->setAttribute(self::CONTAINING_EXPRESSION, $expressionNode);
-                $currentScope = $this->scopeStack->top();
                 if ($expressionNode instanceof Node\Expr\Assign && $expressionNode->var instanceof Node\Expr\Variable) {
-                    $currentScope->assignedPathVars[$expressionNode->var->name] = self::ASSIGNED_FROM_PATH_VAR;
+                    $currentScope->{self::ASSIGNED_PATH_VARS}[$expressionNode->var->name] = self::ASSIGNED_FROM_PATH_VAR;
                 }
             }
 
             $matches = [];
             if (preg_match('#^{\$(.+?)}.*#', $resolvedInclude, $matches)) {
                 $currentScope = $this->scopeStack->top();
-                $pluginListVars = $currentScope->getPluginListVars;
+                $pluginListVars = $currentScope->{self::GET_PLUGIN_LIST_VARS};
                 if (array_key_exists($matches[1], $pluginListVars)
                     && in_array($pluginListVars[$matches[1]], [self::COMPONENT_ITERATOR, self::COMPONENT_INSTANCE])) {
                     $node->setAttribute(self::FROM_CORE_COMPONENT, true);
@@ -213,7 +251,7 @@ class PathResolvingVisitor extends NodeVisitorAbstract
                         $node->setAttribute(self::FROM_CORE_COMPONENT, true);
                     }
                 }
-                $assignedPathVars = $currentScope->assignedPathVars;
+                $assignedPathVars = $currentScope->{self::ASSIGNED_PATH_VARS};
                 if (array_key_exists($matches[1], $assignedPathVars)) {
                     $node->setAttribute(self::ASSIGNED_FROM_PATH_VAR, true);
                 }
@@ -317,8 +355,7 @@ class PathResolvingVisitor extends NodeVisitorAbstract
         if (!str_starts_with($path, '@') && !str_starts_with($path, '{')) {
             $path = '@/' . dirname($this->filePath) . '/' . $path;
         }
-        $path = $this->handleDots($path);
-        return $path;
+        return $this->handleDots($path);
     }
 
     /**
@@ -390,16 +427,17 @@ class PathResolvingVisitor extends NodeVisitorAbstract
     private function checkForCoreComponentCalls(Node $node): void
     {
         if ($node instanceof Node\Expr\StaticCall && $node->class instanceof Node\Name && ltrim($node->class->toString(), '\\') === 'core_component') {
-            $this->coreComponentCalled = true;
+
             $currentScope = $this->scopeStack->top();
+            $currentScope->{self::CORE_COMPONENT_CALLED} = true;
 
             // Look for get_plugin_list(), get_plugin_list_with_class(), get_plugin_list_with_file()
             if ($node->name instanceof Node\Identifier && str_starts_with($node->name->name, 'get_plugin_list')) {
                 $parent = $node->getAttribute('parent');
                 if ($parent instanceof Node\Stmt\Foreach_) {
-                    $currentScope->getPluginListVars[$parent->valueVar->name] = self::COMPONENT_ITERATOR;
+                    $currentScope->{self::GET_PLUGIN_LIST_VARS}[$parent->valueVar->name] = self::COMPONENT_ITERATOR;
                 } elseif ($parent instanceof Node\Expr\Assign) {
-                    $currentScope->getPluginListVars[$parent->var->name] = self::COMPONENT_ASSIGNMENT;
+                    $currentScope->{self::GET_PLUGIN_LIST_VARS}[$parent->var->name] = self::COMPONENT_ASSIGNMENT;
                 } elseif ($parent instanceof Node\Arg) {
                     // Seems to be mostly array_keys and array_key_exists, which we don't need to care about.
                     echo "what happens here?";
@@ -411,7 +449,7 @@ class PathResolvingVisitor extends NodeVisitorAbstract
                     $node->name->name === 'get_component_directory')) {
                 $parent = $node->getAttribute('parent');
                 if ($parent instanceof Node\Expr\Assign) {
-                    $currentScope->getPluginListVars[$parent->var->name] = self::COMPONENT_INSTANCE;
+                    $currentScope->{self::GET_PLUGIN_LIST_VARS}[$parent->var->name] = self::COMPONENT_INSTANCE;
                 } elseif ($parent instanceof Node\Expr\BinaryOp\Concat && $parent->left === $node) {
                     $concatNode = $parent;
                     // We only care about the left side as that is the only bit that can realistically
@@ -422,35 +460,36 @@ class PathResolvingVisitor extends NodeVisitorAbstract
                     }
 
                     if ($concatParent instanceof Node\Expr\Assign && $concatParent->var instanceof Node\Expr\Variable) {
-                        $currentScope->getPluginListVars[$concatParent->var->name] = self::COMPONENT_INSTANCE;
+                        $currentScope->{self::GET_PLUGIN_LIST_VARS}[$concatParent->var->name] = self::COMPONENT_INSTANCE;
                     }
                 }
             }
 
         }
 
-        if ($this->coreComponentCalled) {
-            $currentScope = $this->scopeStack->top();
+        $currentScope = $this->scopeStack->top();
+        if ($currentScope->{self::CORE_COMPONENT_CALLED}) {
+
             if ($node instanceof Node\Stmt\Foreach_) {
                 if ($node->expr instanceof Node\Expr\Variable) {
-                    if (array_key_exists($node->expr->name, $currentScope->getPluginListVars)) {
-                        $currentScope->getPluginListVars[$node->valueVar->name] = self::COMPONENT_ITERATOR;
+                    if (array_key_exists($node->expr->name, $currentScope->{self::GET_PLUGIN_LIST_VARS})) {
+                        $currentScope->{self::GET_PLUGIN_LIST_VARS}[$node->valueVar->name] = self::COMPONENT_ITERATOR;
                     }
                 }
             } elseif ($node instanceof Node\Expr\ArrayDimFetch) {
                 if ($node->var instanceof Node\Expr\Variable) {
-                    if (array_key_exists($node->var->name, $currentScope->getPluginListVars)) {
+                    if (array_key_exists($node->var->name, $currentScope->{self::GET_PLUGIN_LIST_VARS})) {
                         if ($node->dim instanceof Node\Scalar\String_) {
-                            $currentScope->getPluginListVars[$node->var->name . '[\'' . $node->dim->value . '\']'] = self::COMPONENT_INSTANCE;
+                            $currentScope->{self::GET_PLUGIN_LIST_VARS}[$node->var->name . '[\'' . $node->dim->value . '\']'] = self::COMPONENT_INSTANCE;
                         } elseif ($node->dim instanceof Node\Expr\Variable) {
-                            $currentScope->getPluginListVars[$node->var->name . '[$' . $node->dim->name . ']'] = self::COMPONENT_INSTANCE;
+                            $currentScope->{self::GET_PLUGIN_LIST_VARS}[$node->var->name . '[$' . $node->dim->name . ']'] = self::COMPONENT_INSTANCE;
                         }
                     }
                 }
             } elseif ($node instanceof Node\Expr\Assign) {
                 if ($node->expr instanceof Node\Expr\ArrayDimFetch && $node->expr->var instanceof Node\Expr\Variable) {
-                    if (array_key_exists($node->expr->var->name, $currentScope->getPluginListVars)) {
-                        $currentScope->getPluginListVars[$node->var->name] = self::COMPONENT_INSTANCE;
+                    if (array_key_exists($node->expr->var->name, $currentScope->{self::GET_PLUGIN_LIST_VARS})) {
+                        $currentScope->{self::GET_PLUGIN_LIST_VARS}[$node->var->name] = self::COMPONENT_INSTANCE;
                     }
                 } elseif ($node->expr instanceof Node\Expr\BinaryOp\Concat) {
                     $concatNode = $node->expr;
@@ -460,14 +499,14 @@ class PathResolvingVisitor extends NodeVisitorAbstract
                         $concatNode = $concatNode->left;
                     }
                     if ($concatNode->left instanceof Node\Expr\Variable) {
-                        if (array_key_exists($concatNode->left->name, $currentScope->getPluginListVars)) {
-                            $currentScope->getPluginListVars[$node->var->name] = self::COMPONENT_INSTANCE;
+                        if (array_key_exists($concatNode->left->name, $currentScope->{self::GET_PLUGIN_LIST_VARS})) {
+                            $currentScope->{self::GET_PLUGIN_LIST_VARS}[$node->var->name] = self::COMPONENT_INSTANCE;
                         }
                     }
                 } elseif ($node->expr instanceof Node\Scalar\Encapsed) {
                     if ($node->expr->parts[0] instanceof Node\Expr\Variable) {
-                        if (array_key_exists($node->expr->parts[0]->name, $currentScope->getPluginListVars)) {
-                            $currentScope->getPluginListVars[$node->var->name] = self::COMPONENT_INSTANCE;
+                        if (array_key_exists($node->expr->parts[0]->name, $currentScope->{self::GET_PLUGIN_LIST_VARS})) {
+                            $currentScope->{self::GET_PLUGIN_LIST_VARS}[$node->var->name] = self::COMPONENT_INSTANCE;
                         }
                     }
                 }

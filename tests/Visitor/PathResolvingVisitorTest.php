@@ -1,11 +1,8 @@
 <?php
+declare(strict_types=1);
 
-namespace MoodleAnalyse\File;
+namespace MoodleAnalyse\Visitor;
 
-use MoodleAnalyse\Visitor\IncludeResolvingVisitor;
-use MoodleAnalyse\Visitor\PathFindingVisitor;
-use MoodleAnalyse\Visitor\PathResolvingVisitor;
-use PhpParser\Node\Scalar\Encapsed;
 use PhpParser\NodeTraverser;
 use PhpParser\NodeVisitor\ParentConnectingVisitor;
 use PhpParser\Parser;
@@ -34,6 +31,31 @@ class PathResolvingVisitorTest extends TestCase
         unset($this->parser);
         unset($this->traverser);
         unset($this->parentConnectingVisitor);
+    }
+
+    public function testGlobals() {
+        $code = 'function test() { global $CFG, $DB; require($CFG->dirroot . \'/test.php\'); 
+            function test() { require(\'/test.php\'); }}';
+
+        $visitor = new PathResolvingVisitor();
+        $visitor->setFilePath('i/dont/care');
+
+        $this->traverser->addVisitor($visitor);
+        $nodes = $this->parser->parse("<?php $code");
+
+        $this->preProcessor->addVisitor($this->parentConnectingVisitor);
+        $this->preProcessor->addVisitor(new PathFindingVisitor());
+        $nodes = $this->preProcessor->traverse($nodes);
+
+        $this->traverser->traverse($nodes);
+
+        $pathNodes = $visitor->getPathNodes();
+        $this->assertCount(2, $pathNodes);
+        $this->assertTrue($pathNodes[0]->getAttribute(PathResolvingVisitor::CFG_AVAILABLE));
+        $this->assertNull($pathNodes[1]->getAttribute(PathResolvingVisitor::CFG_AVAILABLE));
+
+        unset($pathNodes);
+        unset($nodes);
     }
 
     /**
