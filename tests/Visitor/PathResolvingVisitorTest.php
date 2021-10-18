@@ -33,8 +33,24 @@ class PathResolvingVisitorTest extends TestCase
         unset($this->parentConnectingVisitor);
     }
 
+    public function testIsMoodleInternalCheck() {
+        $codes = [
+            '<?php defined("MOODLE_INTERNAL") || die;',
+            '<?php defined("MOODLE_INTERNAL") or die;'
+        ];
+
+        $visitor = new PathResolvingVisitor();
+        $prvClass = new \ReflectionClass($visitor);
+        $method = $prvClass->getMethod('isMoodleInternalCheck');
+        $method->setAccessible(true);
+        foreach ($codes as $code) {
+            $nodes = $this->parser->parse($code);
+            $this->assertTrue($method->invoke($visitor, $nodes[0]->expr));
+        }
+    }
+
     public function testGlobals() {
-        $code = 'function test() { global $CFG, $DB; require($CFG->dirroot . \'/test.php\'); 
+        $code = 'function test() { global $CFG, $DB; require($CFG->dirroot . \'/test.php\');
             function test() { require(\'/test.php\'); }}';
 
         $visitor = new PathResolvingVisitor();

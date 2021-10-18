@@ -65,13 +65,16 @@ class PathResolvingVisitor extends NodeVisitorAbstract
     public const CFG_AVAILABLE = 'cfgAvailable';
 
     /** @var string has the $CFG variable been accessed at this point in the scope? */
-    const CFG_USED = 'cfgUsed';
+    private const CFG_USED = 'cfgUsed';
+
 
     private string $filePath;
 
     private bool $insidePathNode = false;
 
     private bool $afterConfigInclude = false;
+
+    private bool $hasMoodleInternalCheck = false;
 
     /** @var Node[] */
     private array $pathNodes;
@@ -81,6 +84,7 @@ class PathResolvingVisitor extends NodeVisitorAbstract
     public function beforeTraverse(array $nodes)
     {
         $this->afterConfigInclude = false;
+        $this->hasMoodleInternalCheck = false;
         $this->pathNodes = [];
         $this->scopeStack = new SplStack();
         $this->addScope();
@@ -114,13 +118,22 @@ class PathResolvingVisitor extends NodeVisitorAbstract
             $this->addScope();
         }
 
+        if ($this->isMoodleInternalCheck($node)) {
+            $this->hasMoodleInternalCheck = true;
+        }
+
         $currentScope = $this->scopeStack->top();
 
         if ($node instanceof Node\Stmt\Global_) {
             foreach ($node->vars as $var) {
                 if ($var instanceof Node\Expr\Variable) {
 
-                    $currentScope->{self::GLOBAL_VARIABLES}[$var->name] = 1;
+                    $currentScope->
+                    {
+                    self::GLOBAL_VARIABLES
+                    }
+
+                    [$var->name] = 1;
                 }
             }
         }
@@ -181,7 +194,7 @@ class PathResolvingVisitor extends NodeVisitorAbstract
             // if ($node->name->parts[0] === 'DIRECTORY_SEPARATOR') {
             //     $this->setPathComponent($node, '/');
             // } else {
-                $this->setPathComponent($node, '{' . $node->name->toCodeString() . '}');
+            $this->setPathComponent($node, '{' . $node->name->toCodeString() . '}');
             // }
         } elseif ($node instanceof Node\Expr\ClassConstFetch) {
             if ($node->class instanceof Node\Name && $node->name instanceof Node\Identifier) {
@@ -225,9 +238,10 @@ class PathResolvingVisitor extends NodeVisitorAbstract
             $currentScope = $this->scopeStack->top();
 
             // Check whether we know that $CFG is available at this point.
-            if (isset($currentScope->{self::GLOBAL_VARIABLES}['CFG'])) {
-                $node->setAttribute(self::CFG_AVAILABLE, true);
-            } elseif ($currentScope->{self::CFG_USED}) {
+            // This doesn't mean that it isn't, just that we can't assert it.
+            if (isset($currentScope->{self::GLOBAL_VARIABLES}['CFG'])
+                || $currentScope->{self::CFG_USED}
+                || $this->hasMoodleInternalCheck) {
                 $node->setAttribute(self::CFG_AVAILABLE, true);
             }
 
@@ -574,6 +588,25 @@ class PathResolvingVisitor extends NodeVisitorAbstract
                     . '::' . $node->name->toString() . '}');
             }
         }
+    }
+
+    /**
+     * @param Node $node
+     * @return bool
+     */
+    private function isMoodleInternalCheck(Node $node): bool
+    {
+        // Exit_ is near the start to short circuit as much as possible.
+        return
+            ($node instanceof Node\Expr\BinaryOp\BooleanOr
+                || $node instanceof Node\Expr\BinaryOp\LogicalOr)
+            && $node->right instanceof Node\Expr\Exit_
+            && $node->left instanceof Node\Expr\FuncCall
+            && $node->left->name instanceof Node\Name
+            && $node->left->name->parts[0] = 'defined'
+                && $node->left->args[0] instanceof Node\Arg
+                && $node->left->args[0]->value instanceof Node\Scalar\String_
+                && $node->left->args[0]->value->value == 'MOODLE_INTERNAL';
     }
 
 }
