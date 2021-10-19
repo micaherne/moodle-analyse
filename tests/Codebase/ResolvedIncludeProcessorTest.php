@@ -61,6 +61,8 @@ class ResolvedIncludeProcessorTest extends TestCase
 
     public function toCodeStringTestData()
     {
+        yield ['@\\', '$CFG->dirroot . \'\\\\\''];
+        yield ['@/{ltrim($observer[\'includefile\'], \'/\')}', '$CFG->dirroot . \'/\' . ltrim($observer[\'includefile\'], \'/\')'];
         yield ['', '\'\''];
         yield ['@{$themetestdir}{self::get_behat_tests_path()}', '$CFG->dirroot . $themetestdir . self::get_behat_tests_path()'];
         yield ['@/{\BEHAT_PARALLEL_SITE_NAME}{$i}', '$CFG->dirroot . \'/\' . \BEHAT_PARALLEL_SITE_NAME . $i'];

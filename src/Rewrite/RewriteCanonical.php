@@ -82,6 +82,8 @@ class RewriteCanonical
                 continue;
             }
 
+            $this->logger->info("Rewriting $file");
+
             $pathResolvingVisitor->setFilePath($relativePathname);
             $contents = $file->getContents();
             $nodes = $parser->parse($contents);
@@ -95,12 +97,15 @@ class RewriteCanonical
 
             $rewrites = [];
             foreach ($pathNodes as $pathNode) {
+                // Ensure $CFG is available.
+                if (!$pathNode->getAttribute(PathResolvingVisitor::CFG_AVAILABLE)
+                    && ($pathNode->getAttribute(PathResolvingVisitor::RESOLVED_INCLUDE) !== '@/config.php')) {
+                    $this->logger->debug("Ignoring as \$CFG may be unavailable: {$relativePathname}: {$pathNode->getStartFilePos()}");
+                    continue;
+                }
                 $resolvedInclude = $pathNode->getAttribute('resolvedInclude');
                 $category = $resolvedIncludeProcessor->categorise($resolvedInclude);
-                /*if ($category === 'config' || $pathNode->getAttribute(PathResolvingVisitor::CONTAINING_EXPRESSION)?->getAttribute(PathResolvingVisitor::IS_CONFIG_INCLUDE)) {
-                    $this->logger->debug("Ignoring config: ");
-                    continue;
-                }*/
+
                 if (!is_null($category) && str_starts_with($category, 'suspect')) {
                     $this->logger->debug("Ignoring suspect rewrite {$relativePathname}: {$pathNode->getStartFilePos()}");
                     continue;

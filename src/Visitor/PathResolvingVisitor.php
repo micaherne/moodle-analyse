@@ -239,9 +239,12 @@ class PathResolvingVisitor extends NodeVisitorAbstract
 
             // Check whether we know that $CFG is available at this point.
             // This doesn't mean that it isn't, just that we can't assert it.
+            // (This should also theoretically check for use($CFG) on functions, but that would probably be more
+            // hassle than it's worth as it would mean recursing through the scope stack.)
             if (isset($currentScope->{self::GLOBAL_VARIABLES}['CFG'])
                 || $currentScope->{self::CFG_USED}
-                || $this->hasMoodleInternalCheck) {
+                || ($this->inMainScope() && $this->hasMoodleInternalCheck)
+                || ($this->inMainScope() && $node->getAttribute(self::AFTER_CONFIG_INCLUDE))) {
                 $node->setAttribute(self::CFG_AVAILABLE, true);
             }
 
@@ -514,6 +517,7 @@ class PathResolvingVisitor extends NodeVisitorAbstract
                     }
                     if ($concatNode->left instanceof Node\Expr\Variable) {
                         if (array_key_exists($concatNode->left->name, $currentScope->{self::GET_PLUGIN_LIST_VARS})) {
+                            // TODO: $node->var may be an ArrayDimFetch.
                             $currentScope->{self::GET_PLUGIN_LIST_VARS}[$node->var->name] = self::COMPONENT_INSTANCE;
                         }
                     }
@@ -603,10 +607,18 @@ class PathResolvingVisitor extends NodeVisitorAbstract
             && $node->right instanceof Node\Expr\Exit_
             && $node->left instanceof Node\Expr\FuncCall
             && $node->left->name instanceof Node\Name
-            && $node->left->name->parts[0] = 'defined'
+            && $node->left->name->parts[0] == 'defined'
                 && $node->left->args[0] instanceof Node\Arg
                 && $node->left->args[0]->value instanceof Node\Scalar\String_
                 && $node->left->args[0]->value->value == 'MOODLE_INTERNAL';
+    }
+
+    /**
+     * @return bool
+     */
+    private function inMainScope(): bool
+    {
+        return $this->scopeStack->count() === 1;
     }
 
 }

@@ -38,7 +38,7 @@ if ($out === false) {
 }
 
 fputcsv($out, ['Relative filename', 'Path start line', 'Path end line', 'Path code', 'Resolved include',
-    'Parent code', 'Parent start line', 'Parent end line', 'Parent function call', 'Config include?', 'Category', 'Rewrite code', 'From core component',
+    'Parent code', 'Parent start line', 'Parent end line', 'Parent function call', 'Config include?', '$CFG available', 'Category', 'Rewrite code', 'From core component',
     'Assigned from previous path var']);
 /** @var \Symfony\Component\Finder\SplFileInfo $file */
 foreach ($finder->getFileIterator() as $file) {
@@ -83,11 +83,15 @@ foreach ($finder->getFileIterator() as $file) {
             // Don't hold a reference to the node.
             unset($parentNode);
         } else {
-            $outputRow = array_fill(count($outputRow), 5, '');
+            // Pad the row if we don't have a parent expression (usually it's a return statement)
+            $outputRow = array_merge($outputRow, array_fill(count($outputRow), 5, ''));
         }
 
-        $codeString = $resolvedIncludeProcessor->categorise($resolvedInclude);
-        $outputRow[] = $codeString ?? '';
+        $cfgAvailable = $pathNode->getAttribute(PathResolvingVisitor::CFG_AVAILABLE);
+        $outputRow[] = $cfgAvailable ?? '';
+
+        $category = $resolvedIncludeProcessor->categorise($resolvedInclude);
+        $outputRow[] = $category ?? '';
 
         $codeString = $resolvedIncludeProcessor->toCodeString($resolvedInclude);
         $outputRow[] = $codeString ?? '';

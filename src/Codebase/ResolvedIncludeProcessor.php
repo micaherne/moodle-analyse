@@ -61,7 +61,12 @@ class ResolvedIncludeProcessor
 
 
         // Easier to split to avoid having to deal with partial words (e.g. $CFG->library)
-        $includeParts = explode('/', $resolvedInclude);
+        // We can't simply use $includeParts = explode('/', $resolvedInclude);
+        // The lookbehind is to prevent matching a slash as a parameter, specifically
+        // in ltrim($observer['includefile'], '/') from \core\event\manager.
+        // This is a bit shoddy. It would be better if the lookbehind matched everything but a closing brace,
+        // and there was a matching lookahead that matched everything but an opening one.
+        $includeParts = preg_split('#(?<![\'"])/#', $resolvedInclude);
 
         // Easier to split
         if ($includeParts[0] === '@') {
@@ -121,6 +126,10 @@ class ResolvedIncludeProcessor
         }
 
         $result = implode(' . \'/\' . ', $resultParts);
+
+        // Deal with backslashes escaping the quotes (mainly in @\ resolved path).
+        // This is a bit shoddy and could be better.
+        $result = str_replace('\\\'', '\\\\\'', $result);
 
         // Merge consecutive strings.
         return str_replace(self::QUOTE . ' . ' . self::QUOTE, '', $result);
