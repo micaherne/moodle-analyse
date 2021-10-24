@@ -24,18 +24,32 @@ class ResolvedIncludeProcessorTest extends TestCase
      * @param string $resolvedInclude
      * @param string $expectedOutput
      */
-    public function testToCodeString(string $resolvedInclude, string $expectedOutput) {
+    public function testToCodeString(string $resolvedInclude, string $expectedOutput)
+    {
         $processor = new ResolvedIncludeProcessor();
         $output = $processor->toCodeString($resolvedInclude);
         $this->assertEquals($expectedOutput, $output);
     }
 
-    public function testToCodeStringConfig() {
+    public function testToCodeStringConfig()
+    {
         $processor = new ResolvedIncludeProcessor();
         $this->assertEquals('__DIR__ . \'/../../config.php\'',
             $processor->toCodeString('@/config.php', 'lib/test/something.php'));
         $this->assertEquals('__DIR__ . \'/config.php\'',
             $processor->toCodeString('@/config.php', 'index.php'));
+    }
+
+    /**
+     * @dataProvider splitResolvedIncludeData
+     */
+    public function testSplitResolvedInclude(string $resolvedInclude, array|false $expected)
+    {
+        $processor = new ResolvedIncludeProcessor();
+        $method = (new \ReflectionClass($processor))
+            ->getMethod('splitResolvedInclude');
+        $method->setAccessible(true);
+        $this->assertEquals($expected, $method->invoke($processor, $resolvedInclude));
     }
 
     public function categoriseTestData()
@@ -74,5 +88,15 @@ class ResolvedIncludeProcessorTest extends TestCase
         yield ['@/mod/assign/lib.php', '$CFG->dirroot . \'/mod/assign/lib.php\''];
         yield ['@/lib', '$CFG->libdir'];
         yield ['@/admin', '$CFG->dirroot . \'/\' . $CFG->admin'];
+        yield ['{$blockname}', '$blockname'];
+        yield ['block_{$blockname}.php', '\'block_\' . $blockname . \'.php\''];
+        yield ['somedirectory/block_{$blockname}.php', '\'somedirectory/block_\' . $blockname . \'.php\''];
+    }
+
+    public function splitResolvedIncludeData()
+    {
+        yield ['@/lib/moodlelib.php', ['@', 'lib', 'moodlelib.php']];
+        yield ['@/{ltrim($observer[\'includefile\'], \'/\')}', ['@', '{ltrim($observer[\'includefile\'], \'/\')}']];
+        yield ['@/blocks/{$blockname}/block_{$blockname}.php', ['@', 'blocks', '{$blockname}', 'block_{$blockname}.php']];
     }
 }

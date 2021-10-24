@@ -30,8 +30,10 @@ class FileFinder
     public function getFileIterator(array $types = ['php'], bool $includeThirdPartyLibs = false): Iterator
     {
         $finder = new Finder();
+        $finder->exclude(['.git']);
         $finder->in($this->moodleroot);
         if (!$includeThirdPartyLibs) {
+            $finder->exclude(['vendor', 'node_modules']);
             $finder->exclude($this->getThirdPartyLibDirectories());
         }
         return $finder->name(array_map(fn($type) => '*.' . $type, $types))->files()->getIterator();

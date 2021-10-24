@@ -61,6 +61,12 @@ class PathResolvingVisitor extends NodeVisitorAbstract
     /**
      * @var string do we *know* that $CFG is available at this point?
      * This is useful for checking whether we can substitute a $CFG->dirroot path.
+     *
+     * Note that this is subtly different from "has config.php been called" as it takes account
+     * of function scope, so if the function doesn't have "global $CFG" it will return false
+     * regardless of whether $CFG actually exists.
+     *
+     * So don't use it to determine if any classes are available!
      */
     public const CFG_AVAILABLE = 'cfgAvailable';
 
@@ -238,7 +244,7 @@ class PathResolvingVisitor extends NodeVisitorAbstract
             $currentScope = $this->scopeStack->top();
 
             // Check whether we know that $CFG is available at this point.
-            // This doesn't mean that it isn't, just that we can't assert it.
+            // If not set this doesn't mean that it isn't, just that we can't assert it.
             // (This should also theoretically check for use($CFG) on functions, but that would probably be more
             // hassle than it's worth as it would mean recursing through the scope stack.)
             if (isset($currentScope->{self::GLOBAL_VARIABLES}['CFG'])
@@ -551,6 +557,7 @@ class PathResolvingVisitor extends NodeVisitorAbstract
                 }
             } else {
                 $args = $this->getArgValues($node);
+                // TODO: $node->name could be an ArrayDimFetch (although not in current Moodle)
                 $this->overridePathComponent($node, '{' . $node->name->toCodeString() . '(' . implode(', ', $args) . ')}');
             }
         } elseif ($node instanceof Node\Expr\Variable) {

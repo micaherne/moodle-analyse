@@ -1,9 +1,10 @@
 <?php
 
+use MoodleAnalyse\Codebase\ResolvedIncludeProcessor;
 use MoodleAnalyse\Rewrite\RewriteCanonical;
+use MoodleAnalyse\Rewrite\RewriteCoreCodebase;
 use Symfony\Component\Console\Application;
 use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\Helper\HelperSet;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Logger\ConsoleLogger;
@@ -25,7 +26,12 @@ $app->add(new class() extends Command {
     {
         $logger = new ConsoleLogger($output);
 
-        $rewriter = new RewriteCanonical(__DIR__ . '/../moodle', $logger);
+        $resolvedIncludeProcessor = new ResolvedIncludeProcessor();
+
+        $rewriter = new RewriteCanonical('\\\\wsl$\Ubuntu-20.04\home\michael\dev\moodle\moodle-rewrite',
+            $logger,
+            $resolvedIncludeProcessor
+        ); // __DIR__ . '/../moodle', $logger);
 
         $rewriter->rewrite();
 
@@ -34,7 +40,34 @@ $app->add(new class() extends Command {
 
 });
 
-$app->setDefaultCommand('rewrite:1-canonical', true);
+$app->add(new class() extends Command {
+
+    protected function configure()
+    {
+        $this->setName('rewrite:2-corecodebase')
+            ->setDescription("In-place rewrite with core_codebase static calls")
+            ->addArgument('moodle-dir', InputArgument::REQUIRED, 'The Moodle directory');
+    }
+
+    protected function execute(InputInterface $input, OutputInterface $output)
+    {
+        $logger = new ConsoleLogger($output);
+
+        $resolvedIncludeProcessor = new ResolvedIncludeProcessor();
+
+        $rewriter = new RewriteCoreCodebase('\\\\wsl$\Ubuntu-20.04\home\michael\dev\moodle\moodle-rewrite',
+            $logger,
+            $resolvedIncludeProcessor
+        ); // __DIR__ . '/../moodle', $logger);
+
+        $rewriter->rewrite();
+
+        return 0;
+    }
+
+});
+
+// $app->setDefaultCommand('rewrite:1-canonical', true);
 
 $app->run();
 

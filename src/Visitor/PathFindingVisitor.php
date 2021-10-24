@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace MoodleAnalyse\Visitor;
@@ -9,9 +10,14 @@ use PhpParser\NodeVisitorAbstract;
 /**
  * For preprocessing. Find any nodes that look like paths to the codebase.
  */
-class PathFindingVisitor extends NodeVisitorAbstract {
+class PathFindingVisitor extends NodeVisitorAbstract
+{
 
     public const IS_CODEPATH_NODE = 'isCodepathNode';
+
+    public const ATTR_IN_PROPERTY_DEF = 'inPropertyDefinition';
+
+    private bool $insidePropertyDefinition = false;
 
     private array $pathNodes;
 
@@ -28,6 +34,10 @@ class PathFindingVisitor extends NodeVisitorAbstract {
             return;
         }
 
+        if ($node instanceof Node\Stmt\Property) {
+            $this->insidePropertyDefinition = true;
+        }
+
         if ($node instanceof Node\Expr\PropertyFetch) {
             if ($node->var instanceof Node\Expr\Variable && $node->var->name === 'CFG') {
                 if ($node->name instanceof Node\Identifier && ($node->name->name == 'dirroot' || $node->name->name === 'libdir')) {
@@ -41,7 +51,16 @@ class PathFindingVisitor extends NodeVisitorAbstract {
         }
     }
 
-    private function findRelevantParent(Node $node): ?Node {
+    public function leaveNode(Node $node)
+    {
+        if ($node instanceof Node\Stmt\Property) {
+            $this->insidePropertyDefinition = false;
+        }
+    }
+
+
+    private function findRelevantParent(Node $node): ?Node
+    {
         if (!$node->hasAttribute('parent')) {
             return $node;
         }
@@ -68,7 +87,6 @@ class PathFindingVisitor extends NodeVisitorAbstract {
                     echo "what happens here?\n";
                 }
             }
-
         }
 
         if ($parent instanceof Node\Expr\Assign) {
@@ -107,7 +125,6 @@ class PathFindingVisitor extends NodeVisitorAbstract {
         }
 
         return $this->findRelevantParent($parent);
-
     }
 
     /**
@@ -131,6 +148,9 @@ class PathFindingVisitor extends NodeVisitorAbstract {
         // Null means it looked like a path node but wasn't.
         if (!is_null($relevantParent)) {
             $this->markAsCodePath($relevantParent);
+            if ($this->insidePropertyDefinition) {
+                $this->markAsPropertyDefinition($relevantParent);
+            }
             $this->pathNodes[] = $relevantParent;
         }
     }
@@ -150,6 +170,14 @@ class PathFindingVisitor extends NodeVisitorAbstract {
     private function isDirnameCall(Node $function): bool
     {
         return $function instanceof Node\Expr\FuncCall && $function->name instanceof Node\Name && $function->name->parts[0] === 'dirname';
+    }
+
+    /**
+     * @param Node $relevantParent
+     */
+    private function markAsPropertyDefinition(Node $relevantParent): void
+    {
+        $relevantParent->setAttribute(self::ATTR_IN_PROPERTY_DEF, true);
     }
 
 

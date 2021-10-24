@@ -5,6 +5,12 @@ namespace MoodleAnalyse\Codebase;
 
 use Exception;
 
+/**
+ * Identify the component for a standard file path.
+ *
+ * Note that this only works with standard string paths. If dealing with resolvedInclude strings from
+ * PathResolvingVisitor, use {@link ComponentResolver}.
+ */
 class ComponentIdentifier
 {
 

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace MoodleAnalyse\Rewrite;
 
 use Exception;
+use MoodleAnalyse\Codebase\ResolvedIncludeProcessor;
 use MoodleAnalyse\File\FileFinder;
 use MoodleAnalyse\Visitor\PathFindingVisitor;
 use MoodleAnalyse\Visitor\PathResolvingVisitor;
@@ -27,7 +28,7 @@ use Symfony\Component\Finder\SplFileInfo;
  * @todo Also doesn't work in tests with top level includes for the same reason, e.g.
  *       lib/dml/tests/dml_mysqli_read_slave_test.php
  */
-class RewriteCanonical
+class RewriteCoreCodebase
 {
 
     private array $excludedFiles = [
@@ -40,12 +41,14 @@ class RewriteCanonical
         'lib/setuplib.php',
         'lib/phpunit/bootstrap.php',
         'lib/phpunit/bootstraplib.php',
+
+        'config.php' // Shouldn't be there but let's exclude it in case it is.
     ];
 
     public function __construct(
         private string $moodleroot,
         private LoggerInterface $logger,
-        private $resolvedIncludeProcessor
+        private ResolvedIncludeProcessor $resolvedIncludeProcessor
     ) {
     }
 
@@ -105,7 +108,7 @@ class RewriteCanonical
             // Order nodes in reverse so we don't overwrite rewrites.
             usort($pathNodes, fn(Node $node1, Node $node2) => $node2->getStartFilePos() - $node1->getStartFilePos());
 
-            $rewrites = $this->getRewritesCanonical($pathNodes, $relativePathname);
+            $rewrites = $this->getRewritesCoreCodebase($pathNodes, $relativePathname, $nodes, $contents);
 
             if (count($rewrites) === 0) {
                 continue;
@@ -133,12 +136,18 @@ class RewriteCanonical
     /**
      * @param array $pathNodes
      * @param string $relativePathname
+     * @param array $nodes
+     * @param string $fileContents
      * @return array
      */
-    private function getRewritesCanonical(array $pathNodes, string $relativePathname): array
+    private function getRewritesCoreCodebase(
+        array $pathNodes,
+        string $relativePathname,
+        array $nodes,
+        string $fileContents
+    ): array
     {
         $rewrites = [];
-        /** @var Node $pathNode */
         foreach ($pathNodes as $pathNode) {
             // Ensure $CFG is available.
             if (!$pathNode->getAttribute(PathResolvingVisitor::CFG_AVAILABLE)
@@ -150,6 +159,8 @@ class RewriteCanonical
             }
 
             // If the path is part of a property definition we can't rewrite it to anything but a literal.
+            // TODO: We should check whether the component of the file is the same as the component of the path
+            //  to see whether this is a problem or not (e.g. \tool_behat_manager_util_testcase::$corefeatures)
             if ($pathNode->getAttribute(PathFindingVisitor::ATTR_IN_PROPERTY_DEF)) {
                 $this->logger->info("Ignoring as path is in a property definition");
                 continue;
@@ -162,10 +173,22 @@ class RewriteCanonical
                 $this->logger->debug("Ignoring suspect rewrite {$relativePathname}: {$pathNode->getStartFilePos()}");
                 continue;
             }
+
+            if ($resolvedInclude === '@/config.php') {
+                $codeString = $this->resolvedIncludeProcessor->toCodeString($resolvedInclude, $relativePathname);
+            } else {
+                $codeString = $this->resolvedIncludeProcessor->toCoreCodebasePathCall($resolvedInclude, $relativePathname);
+            }
+
+            if (is_null($codeString)) {
+                $this->logger->info("Leaving include $resolvedInclude as-is");
+                continue;
+            }
+
             $rewrites[] = [
                 $pathNode->getStartFilePos(),
                 $pathNode->getEndFilePos(),
-                $this->resolvedIncludeProcessor->toCodeString($resolvedInclude, $relativePathname)
+                $codeString
             ];
         }
         return $rewrites;
