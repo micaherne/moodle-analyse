@@ -22,7 +22,7 @@ use Symfony\Component\Finder\SplFileInfo;
  * @/user/profile/field/{$proffields[$field]->datatype}/field.class.php
  *
  */
-class PathResolvingVisitor extends NodeVisitorAbstract
+class PathResolvingVisitor extends NodeVisitorAbstract implements FileAwareInterface
 {
 
     public const AFTER_CONFIG_INCLUDE = 'afterConfigInclude';

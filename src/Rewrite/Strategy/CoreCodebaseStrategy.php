@@ -1,0 +1,158 @@
+<?php
+
+declare(strict_types=1);
+
+namespace MoodleAnalyse\Rewrite\Strategy;
+
+use MoodleAnalyse\Codebase\ResolvedIncludeProcessor;
+use MoodleAnalyse\Rewrite\Rewrite;
+use MoodleAnalyse\Visitor\PathFindingVisitor;
+use MoodleAnalyse\Visitor\PathResolvingVisitor;
+use PhpParser\NodeVisitor;
+use Psr\Log\LoggerInterface;
+
+class CoreCodebaseStrategy implements RewriteStrategy
+{
+
+    private PathFindingVisitor $pathFindingVisitor;
+    private PathResolvingVisitor $pathResolvingVisitor;
+    /**
+     * @var array[]
+     */
+    private array $currentFileLogData;
+
+    public function __construct(
+        private LoggerInterface $logger,
+        private ResolvedIncludeProcessor $resolvedIncludeProcessor
+    ) {
+        $this->pathResolvingVisitor = new PathResolvingVisitor();
+        $this->pathFindingVisitor = new PathFindingVisitor();
+    }
+
+    /**
+     * @return string[] a list of files to exclude from rewrite
+     */
+    public function getExcludedFiles(): array
+    {
+        return [
+            'install.php',
+            'admin/cli/install.php',
+            'admin/cli/install_database.php',
+            'admin/tool/phpunit/cli/init.php',
+            'admin/tool/phpunit/cli/util.php',
+            'lib/setup.php',
+            'lib/setuplib.php',
+            'lib/phpunit/bootstrap.php',
+            'lib/phpunit/bootstraplib.php',
+
+            'config.php' // Shouldn't be there but let's exclude it in case it is.
+        ];
+    }
+
+    /**
+     * @return NodeVisitor[][]
+     */
+    public function getVisitors(): array
+    {
+        return [[$this->pathFindingVisitor], [$this->pathResolvingVisitor]];
+    }
+
+    /**
+     * Get rewrites (array of start char no, end char no, code).
+     *
+     * @return Rewrite[]
+     */
+    public function getRewrites(array $nodes, string $fileContents, string $relativeFilePath): array
+    {
+        $pathNodes = $this->pathResolvingVisitor->getPathNodes();
+
+        $rewrites = [];
+
+        $this->currentFileLogData = [
+            'ignored' => [],
+            'rewritten' => []
+        ];
+
+        foreach ($pathNodes as $pathNode) {
+            $code = substr(
+                $fileContents,
+                $pathNode->getStartFilePos(),
+                ($pathNode->getEndFilePos() - $pathNode->getStartFilePos()) + 1
+            );
+
+            // Ensure $CFG is available.
+            if (!$pathNode->getAttribute(PathResolvingVisitor::CFG_AVAILABLE)
+                && ($pathNode->getAttribute(PathResolvingVisitor::RESOLVED_INCLUDE) !== '@/config.php')) {
+                $this->logger->debug(
+                    "Ignoring as \$CFG may be unavailable: {$relativeFilePath}: {$pathNode->getStartFilePos()}"
+                );
+                $this->currentFileLogData['ignored'][] = [$pathNode->getStartLine(), $code, '$CFG may be unavailable'];
+                continue;
+            }
+
+            // If the path is part of a property definition we can't rewrite it to anything but a literal.
+            // TODO: We should check whether the component of the file is the same as the component of the path
+            //  to see whether this is a problem or not (e.g. \tool_behat_manager_util_testcase::$corefeatures)
+            if ($pathNode->getAttribute(PathFindingVisitor::ATTR_IN_PROPERTY_DEF)) {
+                $this->logger->info("Ignoring as path is in a property definition");
+                $this->currentFileLogData['ignored'][] = [$pathNode->getStartLine(), $code, 'Inside property definition'];
+                continue;
+            }
+
+            $resolvedInclude = $pathNode->getAttribute('resolvedInclude');
+            $category = $this->resolvedIncludeProcessor->categorise($resolvedInclude);
+
+            if (!is_null($category) && str_starts_with($category, 'suspect')) {
+                $this->logger->debug(
+                    "Ignoring suspect rewrite {$relativeFilePath}: {$pathNode->getStartFilePos()}"
+                );
+                $this->currentFileLogData['ignored'][] = [$pathNode->getStartLine(), $code, 'Suspect resolved path'];
+                continue;
+            }
+
+            if ($resolvedInclude === '@/config.php') {
+                $codeString = $this->resolvedIncludeProcessor->toCodeString(
+                    $resolvedInclude,
+                    $relativeFilePath
+                );
+            } else {
+                $codeString = $this->resolvedIncludeProcessor->toCoreCodebasePathCall(
+                    $resolvedInclude,
+                    $relativeFilePath
+                );
+            }
+
+            if (is_null($codeString)) {
+                $this->logger->info("Leaving include $resolvedInclude as-is");
+                $this->currentFileLogData['ignored'][] = [$pathNode->getStartLine(), $code, 'No replacement given'];
+                continue;
+            }
+
+            $rewrites[] = new Rewrite(
+                $pathNode->getStartFilePos(),
+                $pathNode->getEndFilePos(),
+                $codeString
+            );
+
+            $this->currentFileLogData['rewritten'][] = [$pathNode->getStartLine(), $code, $codeString];
+        }
+
+        // Try to be nice to the garbage collector. We don't want any references to nodes left or we'll use up
+        // too much memory.
+        unset($pathNodes);
+
+        return $rewrites;
+    }
+
+    /**
+     * @return array[]
+     */
+    public function getCurrentFileLogData(): array
+    {
+        return $this->currentFileLogData;
+    }
+
+
+
+
+}

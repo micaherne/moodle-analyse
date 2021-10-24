@@ -60,10 +60,15 @@ class ResolvedIncludeProcessor
      * This is simply the "canonical" version of the path given.
      *
      * @param string $resolvedInclude
+     * @param string|null $filePath the relative file path
      * @return string
      */
     public function toCodeString(string $resolvedInclude, ?string $filePath = null): string
     {
+        if (!is_null($filePath)) {
+            $filePath = str_replace('\\', '/', $filePath);
+        }
+
         if (!is_null($filePath) && $resolvedInclude === '@/config.php') {
             return '__DIR__ . \'' . str_repeat('/..', substr_count($filePath, '/')) . '/config.php\'';
         }
@@ -154,7 +159,15 @@ class ResolvedIncludeProcessor
         if (!str_starts_with($resolvedInclude, '@')) {
             return $codeString;
         }
-        if (preg_match('#^@[/\\\]?$#', $resolvedInclude)) {
+
+        // Return null if it's just dirroot on its own, or with a slash. This is more likely to be a bit of
+        // dirroot wrangling than an actual link. For example, checking something is in the codebase (starts
+        // with dirroot), making an absolute path relative (stripping dirroot off the start), or the crazy stuff
+        // in \is_dataroot_insecure().
+        if (preg_match('#^@[/\\\]?$#', $resolvedInclude) || preg_match(
+                '#^@{\\?DIRECTORY_SEPARATOR}$#',
+                $resolvedInclude
+            )) {
             return $codeString;
         }
 

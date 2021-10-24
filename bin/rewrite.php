@@ -1,8 +1,9 @@
 <?php
 
 use MoodleAnalyse\Codebase\ResolvedIncludeProcessor;
-use MoodleAnalyse\Rewrite\RewriteCanonical;
-use MoodleAnalyse\Rewrite\RewriteCoreCodebase;
+use MoodleAnalyse\Rewrite\RewriteEngine;
+use MoodleAnalyse\Rewrite\Strategy\CanonicalStrategy;
+use MoodleAnalyse\Rewrite\Strategy\CoreCodebaseStrategy;
 use Symfony\Component\Console\Application;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputArgument;
@@ -27,10 +28,11 @@ $app->add(new class() extends Command {
         $logger = new ConsoleLogger($output);
 
         $resolvedIncludeProcessor = new ResolvedIncludeProcessor();
+        $strategy = new CanonicalStrategy($logger, $resolvedIncludeProcessor);
 
-        $rewriter = new RewriteCanonical('\\\\wsl$\Ubuntu-20.04\home\michael\dev\moodle\moodle-rewrite',
+        $rewriter = new RewriteEngine('\\\\wsl$\Ubuntu-20.04\home\michael\dev\moodle\moodle-rewrite',
             $logger,
-            $resolvedIncludeProcessor
+            $strategy
         ); // __DIR__ . '/../moodle', $logger);
 
         $rewriter->rewrite();
@@ -54,10 +56,11 @@ $app->add(new class() extends Command {
         $logger = new ConsoleLogger($output);
 
         $resolvedIncludeProcessor = new ResolvedIncludeProcessor();
+        $strategy = new CoreCodebaseStrategy($logger, $resolvedIncludeProcessor);
 
-        $rewriter = new RewriteCoreCodebase('\\\\wsl$\Ubuntu-20.04\home\michael\dev\moodle\moodle-rewrite',
+        $rewriter = new RewriteEngine('\\\\wsl$\Ubuntu-20.04\home\michael\dev\moodle\moodle-rewrite',
             $logger,
-            $resolvedIncludeProcessor
+            $strategy
         ); // __DIR__ . '/../moodle', $logger);
 
         $rewriter->rewrite();
