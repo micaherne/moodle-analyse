@@ -16,16 +16,7 @@ use PhpParser\ParserFactory;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Finder\SplFileInfo;
 
-/**
- * Rewrite file paths to standard $CFG->dirroot etc format.
- *
- * @todo This does not work in some edge cases where $CFG is not actually available
- *       but hasn't been detected as such, e.g. lib/form/templatable_form_element.php where it's included
- *       inside a function that doesn't have a global $CFG statement.
- *
- * @todo Also doesn't work in tests with top level includes for the same reason, e.g.
- *       lib/dml/tests/dml_mysqli_read_slave_test.php
- */
+
 class RewriteEngine
 {
 
@@ -104,12 +95,6 @@ class RewriteEngine
         foreach ($finder->getFileIterator() as $file) {
 
             $relativePathname = (string)str_replace('\\', '/', $file->getRelativePathname());
-
-            $excludedFiles = $this->strategy->getExcludedFiles();
-            if (in_array($relativePathname, $excludedFiles)) {
-                $this->logger->info("Ignoring excluded file $relativePathname");
-                continue;
-            }
 
             $this->logger->info("Rewriting $file");
 

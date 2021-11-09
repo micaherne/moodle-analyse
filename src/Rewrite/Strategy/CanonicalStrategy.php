@@ -11,6 +11,16 @@ use MoodleAnalyse\Visitor\PathResolvingVisitor;
 use PhpParser\Node;
 use Psr\Log\LoggerInterface;
 
+/**
+ * Rewrite file paths to standard $CFG->dirroot etc format.
+ *
+ * @todo This does not work in some edge cases where $CFG is not actually available
+ *       but hasn't been detected as such, e.g. lib/form/templatable_form_element.php where it's included
+ *       inside a function that doesn't have a global $CFG statement.
+ *
+ * @todo Also doesn't work in tests with top level includes for the same reason, e.g.
+ *       lib/dml/tests/dml_mysqli_read_slave_test.php
+ */
 class CanonicalStrategy implements RewriteStrategy
 {
 
@@ -118,5 +128,10 @@ class CanonicalStrategy implements RewriteStrategy
     public function getCurrentFileLogData(): array
     {
         return $this->currentFileLogData;
+    }
+
+    public function addFiles(string $moodleroot): void
+    {
+
     }
 }

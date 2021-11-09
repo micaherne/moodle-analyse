@@ -156,11 +156,15 @@ class ComponentResolver
 
         $currentNode =& $this->tree;
         // TODO: Copied from ResolvedIncludeProcessor - refactor.
-        $pathParts = preg_split('#(?<![\'"])/(?!=[^\'"])#', $path);
+        // The plus is to prevent double slashes causing empty parts, e.g. /lib//questionlib.php
+        // in backup\util\includes\restore_includes.php. These appear to be treated as single slashes
+        // in file paths by PHP anyway (which is why the above example works).
+        $pathParts = preg_split('#(?<![\'"])/+(?!=[^\'"])#', $path);
 
         $lastPluginRootValue = null;
         $lastSubsystemValue = null;
         while ($pathItem = array_shift($pathParts)) {
+
             // Keep track of the last plugin root we visited in case we don't end up in a subplugin.
             if (array_key_exists(self::PLUGIN_ROOT, $currentNode)) {
                 $lastPluginRootValue = [...$currentNode[self::PLUGIN_ROOT], implode('/', [$pathItem, ...$pathParts])];

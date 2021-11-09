@@ -10,10 +10,6 @@ use Symfony\Component\Finder\SplFileInfo;
 
 interface RewriteStrategy
 {
-    /**
-     * @return string[] a list of files to exclude from rewrite
-     */
-    public function getExcludedFiles(): array;
 
     /**
      * An array of lists of visitors, one list per processing pass required.

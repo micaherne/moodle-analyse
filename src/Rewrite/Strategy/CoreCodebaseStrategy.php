@@ -21,6 +21,29 @@ class CoreCodebaseStrategy implements RewriteStrategy
      */
     private array $currentFileLogData;
 
+    private const CODEBASE_INCLUDE_FILES = [
+        'install.php',
+        'lib/setup.php',
+        'admin/cli/install.php',
+        'admin/cli/install_database.php'
+    ];
+
+    private const NO_REWRITE_FILES = [
+        'install.php',
+        'admin/cli/install.php',
+        'admin/cli/install_database.php',
+        'admin/tool/phpunit/cli/init.php',
+        'admin/tool/phpunit/cli/util.php',
+        'lib/ajax/service-nologin.php', // Just includes lib/ajax/service.php
+        'lib/classes/component.php',
+        'lib/setup.php',
+        'lib/setuplib.php',
+        'lib/phpunit/bootstrap.php',
+        'lib/phpunit/bootstraplib.php',
+
+        'config.php' // Shouldn't be there but let's exclude it in case it is.
+    ];
+
     public function __construct(
         private LoggerInterface $logger,
         private ResolvedIncludeProcessor $resolvedIncludeProcessor
@@ -29,27 +52,6 @@ class CoreCodebaseStrategy implements RewriteStrategy
         $this->pathFindingVisitor = new PathFindingVisitor();
     }
 
-    /**
-     * @return string[] a list of files to exclude from rewrite
-     */
-    public function getExcludedFiles(): array
-    {
-        return [
-            'install.php',
-            'admin/cli/install.php',
-            'admin/cli/install_database.php',
-            'admin/tool/phpunit/cli/init.php',
-            'admin/tool/phpunit/cli/util.php',
-            'lib/ajax/service-nologin.php', // Just includes lib/ajax/service.php
-            'lib/classes/component.php',
-            'lib/setup.php',
-            'lib/setuplib.php',
-            'lib/phpunit/bootstrap.php',
-            'lib/phpunit/bootstraplib.php',
-
-            'config.php' // Shouldn't be there but let's exclude it in case it is.
-        ];
-    }
 
     /**
      * @return NodeVisitor[][]
@@ -69,6 +71,14 @@ class CoreCodebaseStrategy implements RewriteStrategy
         $pathNodes = $this->pathResolvingVisitor->getPathNodes();
 
         $rewrites = [];
+
+        if (in_array($relativeFilePath, self::CODEBASE_INCLUDE_FILES)) {
+            $rewrites[] = $this->getCodebaseIncludeRewrite($nodes, $fileContents, $relativeFilePath);
+        }
+
+        if (in_array($relativeFilePath, self::NO_REWRITE_FILES)) {
+            return $rewrites;
+        }
 
         $this->currentFileLogData = [
             'ignored' => [],
@@ -173,6 +183,36 @@ class CoreCodebaseStrategy implements RewriteStrategy
     public function addFiles(string $moodleroot): void
     {
         copy(__DIR__ . '/../../../resources/codebase.php', $moodleroot . '/lib/classes/codebase.php');
+    }
+
+    /**
+     * Create a rewrite to add an include for core_codebase.
+     *
+     * @todo This isn't brilliant as it just bungs it in before the first node, which can confuse the comments,
+     *       e.g. in lib/setup.php
+     *
+     * @param array $nodes
+     * @param string $fileContents
+     * @param string $relativeFilePath
+     * @return Rewrite
+     */
+    private function getCodebaseIncludeRewrite(array $nodes, string $fileContents, string $relativeFilePath): Rewrite
+    {
+        $firstNode = $nodes[0];
+        $code = substr(
+            $fileContents,
+            $firstNode->getStartFilePos(),
+            ($firstNode->getEndFilePos() - $firstNode->getStartFilePos()) + 1
+        );
+
+        $require = 'require_once(__DIR__ . \''
+            . str_repeat('/..', substr_count($relativeFilePath, '/'))
+            . '/lib/classes/codebase.php\');';
+
+        $rewrittenCode = $require . "\n\n" . $code;
+        $this->currentFileLogData['rewritten'][] = [$firstNode->getStartLine(), $code, $rewrittenCode];
+
+        return new Rewrite($firstNode->getStartFilePos(), $firstNode->getEndFilePos(), $rewrittenCode);
     }
 
 }

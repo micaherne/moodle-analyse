@@ -2,6 +2,8 @@
 
 namespace MoodleAnalyse\Codebase;
 
+use Exception;
+use Generator;
 use PHPUnit\Framework\TestCase;
 
 class ComponentResolverTest extends TestCase
@@ -50,7 +52,7 @@ class ComponentResolverTest extends TestCase
      * @dataProvider resolveComponentData
      * @param string $resolvedInclude
      * @param array|null $expected
-     * @throws \Exception
+     * @throws Exception
      */
     public function testResolveComponent(string $resolvedInclude, ?array $expected)
     {
@@ -163,8 +165,9 @@ class ComponentResolverTest extends TestCase
         $this->assertEquals($expected, $componentResolver->resolveComponent($resolvedInclude));
     }
 
-    public function resolveComponentData()
+    public function resolveComponentData(): Generator
     {
+        yield ['@/lib//questionlib.php', ['core', null, 'questionlib.php']];
         yield ['@/cache/stores', ['core', 'cache', 'stores']];
         yield ['@/lib', ['core', null, '']];
         yield ['@/auth/db/classes/privacy/provider.php', ['auth', 'db', 'classes/privacy/provider.php']];
