@@ -52,6 +52,12 @@ class IncludeResolvingVisitorTest extends TestCase
     public function requireDataProvider(): \Generator
     {
         yield [
+            'backup/util/includes/restore_includes.php',
+            'require_once($CFG->dirroot . \'/lib//questionlib.php\')',
+            '@/lib//questionlib.php'
+        ];
+
+        yield [
             'tag/classes/tag.php',
             'require_once($CFG->dirroot . \'/\' . ltrim($tagarea->callbackfile, \'/\'))',
             '@/{ltrim($tagarea->callbackfile, \'/\')}'

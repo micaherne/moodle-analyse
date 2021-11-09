@@ -177,6 +177,10 @@ class ComponentResolver
             // Follow the path directories down the component tree until we get to one we don't know about.
             if (array_key_exists($pathItem, $currentNode)) {
                 $currentNode =& $currentNode[$pathItem];
+
+                // We can't use pathItem any more.
+                $pathItem = null;
+
                 if (count($pathParts) !== 0) {
                     continue;
                 } else {
@@ -196,7 +200,8 @@ class ComponentResolver
                 return $lastPluginRootValue;
             } elseif (array_key_exists(self::PLUGIN_TYPE_ROOT, $currentNode)) {
                 $pluginType = $currentNode[self::PLUGIN_TYPE_ROOT];
-                if ($this->isValidPluginName($pluginType, $pathItem)) {
+
+                if (!is_null($pathItem) && $this->isValidPluginName($pluginType, $pathItem)) {
                     if (count($pathParts) === 1 && $pathParts[0] == '') {
                         // If there's a trailing slash we have the last part as the empty string, but this
                         // won't result in a trailing slash if it's the only thing there, as there's no insertion

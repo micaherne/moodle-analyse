@@ -69,7 +69,7 @@ class CanonicalStrategy implements RewriteStrategy
         ];
 
         $rewrites = [];
-        /** @var Node $pathNode */
+
         foreach ($pathNodes as $pathNode) {
 
             $code = substr(

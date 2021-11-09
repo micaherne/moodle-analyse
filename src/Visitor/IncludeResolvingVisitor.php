@@ -230,7 +230,8 @@ class IncludeResolvingVisitor extends FindingVisitor
      */
     private function fixPearLibraries(string $path): string
     {
-        if (str_starts_with($path, 'HTML/') || str_starts_with($path, 'PEAR/')) {
+        // No slash after PEAR so we match lib/pear/PEAR.php
+        if (str_starts_with($path, 'HTML/') || str_starts_with($path, 'PEAR')) {
             return '@/lib/pear/' . $path;
         }
         return $path;

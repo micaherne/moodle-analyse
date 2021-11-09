@@ -63,90 +63,90 @@ class ComponentResolverTest extends TestCase
 
             protected function getSubpluginData(object $componentsJsonData): iterable
             {
-                return array(
+                return [
                     'mod_assign' =>
-                        (object)array(
+                        (object)[
                             'plugintypes' =>
-                                (object)array(
+                                (object)[
                                     'assignsubmission' => 'mod/assign/submission',
                                     'assignfeedback' => 'mod/assign/feedback',
-                                ),
-                        ),
+                                ],
+                        ],
                     'mod_assignment' =>
-                        (object)array(
+                        (object)[
                             'plugintypes' =>
-                                (object)array(
+                                (object)[
                                     'assignment' => 'mod/assignment/type',
-                                ),
-                        ),
+                                ],
+                        ],
                     'mod_book' =>
-                        (object)array(
+                        (object)[
                             'plugintypes' =>
-                                (object)array(
+                                (object)[
                                     'booktool' => 'mod/book/tool',
-                                ),
-                        ),
+                                ],
+                        ],
                     'mod_data' =>
-                        (object)array(
+                        (object)[
                             'plugintypes' =>
-                                (object)array(
+                                (object)[
                                     'datafield' => 'mod/data/field',
                                     'datapreset' => 'mod/data/preset',
-                                ),
-                        ),
+                                ],
+                        ],
                     'mod_forum' =>
-                        (object)array(
+                        (object)[
                             'plugintypes' =>
-                                (object)array(
+                                (object)[
                                     'forumreport' => 'mod/forum/report',
-                                ),
-                        ),
+                                ],
+                        ],
                     'mod_lti' =>
-                        (object)array(
+                        (object)[
                             'plugintypes' =>
-                                (object)array(
+                                (object)[
                                     'ltisource' => 'mod/lti/source',
                                     'ltiservice' => 'mod/lti/service',
-                                ),
-                        ),
+                                ],
+                        ],
                     'mod_quiz' =>
-                        (object)array(
+                        (object)[
                             'plugintypes' =>
-                                (object)array(
+                                (object)[
                                     'quiz' => 'mod/quiz/report',
                                     'quizaccess' => 'mod/quiz/accessrule',
-                                ),
-                        ),
+                                ],
+                        ],
                     'mod_scorm' =>
-                        (object)array(
+                        (object)[
                             'plugintypes' =>
-                                (object)array(
+                                (object)[
                                     'scormreport' => 'mod/scorm/report',
-                                ),
-                        ),
+                                ],
+                        ],
                     'mod_workshop' =>
-                        (object)array(
+                        (object)[
                             'plugintypes' =>
-                                (object)array(
+                                (object)[
                                     'workshopform' => 'mod/workshop/form',
                                     'workshopallocation' => 'mod/workshop/allocation',
                                     'workshopeval' => 'mod/workshop/eval',
-                                ),
-                        ),
+                                ],
+                        ],
                     'editor_atto' =>
-                        (object)array(
+                        (object)[
                             'plugintypes' =>
-                                (object)array(
+                                (object)[
                                     'atto' => 'lib/editor/atto/plugins',
-                                ),
-                        ),
+                                ],
+                        ],
                     'editor_tinymce' =>
-                        (object)array(
+                        (object)[
                             'plugintypes' =>
-                                (object)array(
+                                (object)[
                                     'tinymce' => 'lib/editor/tinymce/plugins',
-                                ),
-                        ),
+                                ],
+                        ],
                     'tool_log' =>
                         (object)[
                             'plugintypes' =>
@@ -154,7 +154,7 @@ class ComponentResolverTest extends TestCase
                                     'logstore' => 'admin/tool/log/store',
                                 ],
                         ],
-                );
+                ];
             }
 
 
@@ -165,6 +165,7 @@ class ComponentResolverTest extends TestCase
 
     public function resolveComponentData()
     {
+        yield ['@/cache/stores', ['core', 'cache', 'stores']];
         yield ['@/lib', ['core', null, '']];
         yield ['@/auth/db/classes/privacy/provider.php', ['auth', 'db', 'classes/privacy/provider.php']];
         yield ['@/mod/db/test.php', ['core', 'root', 'mod/db/test.php']];

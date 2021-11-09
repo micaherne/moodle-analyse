@@ -40,6 +40,8 @@ class CoreCodebaseStrategy implements RewriteStrategy
             'admin/cli/install_database.php',
             'admin/tool/phpunit/cli/init.php',
             'admin/tool/phpunit/cli/util.php',
+            'lib/ajax/service-nologin.php', // Just includes lib/ajax/service.php
+            'lib/classes/component.php',
             'lib/setup.php',
             'lib/setuplib.php',
             'lib/phpunit/bootstrap.php',
@@ -74,6 +76,7 @@ class CoreCodebaseStrategy implements RewriteStrategy
         ];
 
         foreach ($pathNodes as $pathNode) {
+
             $code = substr(
                 $fileContents,
                 $pathNode->getStartFilePos(),
@@ -81,14 +84,14 @@ class CoreCodebaseStrategy implements RewriteStrategy
             );
 
             // Ensure $CFG is available.
-            if (!$pathNode->getAttribute(PathResolvingVisitor::CFG_AVAILABLE)
+            /*if (!$pathNode->getAttribute(PathResolvingVisitor::CFG_AVAILABLE)
                 && ($pathNode->getAttribute(PathResolvingVisitor::RESOLVED_INCLUDE) !== '@/config.php')) {
                 $this->logger->debug(
                     "Ignoring as \$CFG may be unavailable: {$relativeFilePath}: {$pathNode->getStartFilePos()}"
                 );
                 $this->currentFileLogData['ignored'][] = [$pathNode->getStartLine(), $code, '$CFG may be unavailable'];
                 continue;
-            }
+            }*/
 
             // If the path is part of a property definition we can't rewrite it to anything but a literal.
             // TODO: We should check whether the component of the file is the same as the component of the path
@@ -100,13 +103,22 @@ class CoreCodebaseStrategy implements RewriteStrategy
             }
 
             $resolvedInclude = $pathNode->getAttribute('resolvedInclude');
-            $category = $this->resolvedIncludeProcessor->categorise($resolvedInclude);
+            // $category = $this->resolvedIncludeProcessor->categorise($resolvedInclude);
 
-            if (!is_null($category) && str_starts_with($category, 'suspect')) {
+            // Check for dodgy ones where it was e.g. $CFG->dirroot in the middle of an error message string.
+            $internalRoot = strpos(substr($resolvedInclude, 1), '@');
+            if ($internalRoot !== false) {
                 $this->logger->debug(
                     "Ignoring suspect rewrite {$relativeFilePath}: {$pathNode->getStartFilePos()}"
                 );
                 $this->currentFileLogData['ignored'][] = [$pathNode->getStartLine(), $code, 'Suspect resolved path'];
+                continue;
+            }
+
+            // If it's just dirroot with or without a slash, it's some kind of dirroot wrangling probably.
+            if ($resolvedInclude === '@' || $resolvedInclude === '@/' || $resolvedInclude === '@\\'
+                || $resolvedInclude === '@{DIRECTORY_SEPARATOR}' || $resolvedInclude === '@{\\DIRECTORY_SEPARATOR}') {
+                $this->currentFileLogData['ignored'][] = [$pathNode->getStartLine(), $code, 'Dirroot wrangling'];
                 continue;
             }
 
@@ -116,7 +128,7 @@ class CoreCodebaseStrategy implements RewriteStrategy
                     $relativeFilePath
                 );
             } else {
-                $codeString = $this->resolvedIncludeProcessor->toCoreCodebasePathCall(
+                $codeString = $this->resolvedIncludeProcessor->toCoreCodebaseCall(
                     $resolvedInclude,
                     $relativeFilePath
                 );

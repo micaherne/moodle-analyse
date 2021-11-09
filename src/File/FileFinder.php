@@ -34,7 +34,9 @@ class FileFinder
         $finder->in($this->moodleroot);
         if (!$includeThirdPartyLibs) {
             $finder->exclude(['vendor', 'node_modules']);
-            $finder->exclude($this->getThirdPartyLibDirectories());
+            $thirdPartyLibLocations = $this->getThirdPartyLibLocations();
+            $finder->exclude($thirdPartyLibLocations['dirs']);
+            $finder->notPath($thirdPartyLibLocations['files']);
         }
         return $finder->name(array_map(fn($type) => '*.' . $type, $types))->files()->getIterator();
     }
@@ -42,7 +44,7 @@ class FileFinder
     /**
      * @return string[]
      */
-    private function getThirdPartyLibDirectories(): array
+    private function getThirdPartyLibLocations(): array
     {
         $libFileDirectories = ['lib'];
         $components = json_decode(file_get_contents($this->moodleroot . '/lib/components.json'));
@@ -60,7 +62,7 @@ class FileFinder
         }
         $libFileDirectories = array_merge($libFileDirectories, array_values((array) $components->plugintypes));
 
-        $libDirectories = [];
+        $libDirectories = ['files' => [], 'dirs' => []];
         foreach ($libFileDirectories as $libFileDirectory) {
             $thirdPartyLibFile = $this->moodleroot . '/' . $libFileDirectory . '/' . self::THIRDPARTYLIBS_XML;
             if (!file_exists($thirdPartyLibFile)) {
@@ -70,10 +72,17 @@ class FileFinder
 
             // It may be a single SimpleXMLElement or an array of them.
             foreach ($xml->library as $library) {
-                $libDirectories[] = $libFileDirectory . '/' . $library->location;
+                $location = $libFileDirectory . '/' . $library->location;
+                if (is_dir($this->moodleroot . '/' . $location)) {
+                    $libDirectories['dirs'][] = $location;
+                } else {
+                    $libDirectories['files'][] = $location;
+                }
+
             }
 
         }
+
         return $libDirectories;
     }
 

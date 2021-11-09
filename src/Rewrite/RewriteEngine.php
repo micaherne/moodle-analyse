@@ -35,10 +35,13 @@ class RewriteEngine
         'admin/cli/install_database.php',
         'admin/tool/phpunit/cli/init.php',
         'admin/tool/phpunit/cli/util.php',
+        'lib/ajax/service-nologin.php', // Just includes lib/ajax/service.php
+        'lib/classes/component.php',
         'lib/setup.php',
         'lib/setuplib.php',
         'lib/phpunit/bootstrap.php',
         'lib/phpunit/bootstraplib.php',
+
 
         'config.php' // Shouldn't be there but let's exclude it in case it is.
     ];
@@ -102,6 +105,7 @@ class RewriteEngine
 
             $relativePathname = (string)str_replace('\\', '/', $file->getRelativePathname());
 
+            // TODO: Should maybe get the list of excluded files from the strategy.
             if (in_array($relativePathname, $this->excludedFiles)) {
                 $this->logger->info("Ignoring excluded file $relativePathname");
                 continue;
@@ -162,8 +166,6 @@ class RewriteEngine
             }
 
         }
-
-
 
         foreach ($this->rewriteLogFiles as $logFile) {
             fclose($logFile);

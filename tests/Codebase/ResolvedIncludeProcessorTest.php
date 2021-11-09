@@ -38,6 +38,9 @@ class ResolvedIncludeProcessorTest extends TestCase
             $processor->toCodeString('@/config.php', 'lib/test/something.php'));
         $this->assertEquals('__DIR__ . \'/config.php\'',
             $processor->toCodeString('@/config.php', 'index.php'));
+        // From restore_includes.php - there's an extra slash.
+        $this->assertEquals('$CFG->libdir . \'//questionlib.php\'',
+            $processor->toCodeString('@/lib//questionlib.php'));
     }
 
     /**
@@ -51,6 +54,17 @@ class ResolvedIncludeProcessorTest extends TestCase
         $method->setAccessible(true);
         $this->assertEquals($expected, $method->invoke($processor, $resolvedInclude));
     }
+
+    public function testToCoreCodebasePathCall()
+    {
+        $processor = new ResolvedIncludeProcessor();
+        $this->assertEquals('$CFG->dirroot', $processor->toCoreCodebasePathCall('@'));
+        $this->assertEquals('$CFG->dirroot . \'/\'', $processor->toCoreCodebasePathCall('@/'));
+        $this->assertEquals('$CFG->dirroot . \'\\\'', $processor->toCoreCodebasePathCall('@\\'));
+        $this->assertEquals('$CFG->dirroot . DIRECTORY_SEPARATOR', $processor->toCoreCodebasePathCall('@{DIRECTORY_SEPARATOR}'));
+        $this->assertEquals('$CFG->dirroot . \DIRECTORY_SEPARATOR', $processor->toCoreCodebasePathCall('@{\DIRECTORY_SEPARATOR}'));
+    }
+
 
     public function categoriseTestData()
     {
@@ -75,7 +89,7 @@ class ResolvedIncludeProcessorTest extends TestCase
 
     public function toCodeStringTestData()
     {
-        yield ['@\\', '$CFG->dirroot . \'\\\\\''];
+        yield ['@\\', '$CFG->dirroot . \'\\\''];
         yield ['@/{ltrim($observer[\'includefile\'], \'/\')}', '$CFG->dirroot . \'/\' . ltrim($observer[\'includefile\'], \'/\')'];
         yield ['', '\'\''];
         yield ['@{$themetestdir}{self::get_behat_tests_path()}', '$CFG->dirroot . $themetestdir . self::get_behat_tests_path()'];

@@ -1,5 +1,6 @@
 <?php
 
+use MoodleAnalyse\Codebase\ComponentResolver;
 use MoodleAnalyse\Codebase\ResolvedIncludeProcessor;
 use MoodleAnalyse\Rewrite\RewriteEngine;
 use MoodleAnalyse\Rewrite\Strategy\CanonicalStrategy;
@@ -55,10 +56,16 @@ $app->add(new class() extends Command {
     {
         $logger = new ConsoleLogger($output);
 
-        $resolvedIncludeProcessor = new ResolvedIncludeProcessor();
+        // Hard-coded for testing but should come from the moodle-dir argument.
+        $moodleroot = '\\\\wsl$\Ubuntu-20.04\home\michael\dev\moodle\moodle-rewrite';
+
+        $componentResolver = new ComponentResolver($moodleroot);
+        $resolvedIncludeProcessor = new ResolvedIncludeProcessor($componentResolver);
+
         $strategy = new CoreCodebaseStrategy($logger, $resolvedIncludeProcessor);
 
-        $rewriter = new RewriteEngine('\\\\wsl$\Ubuntu-20.04\home\michael\dev\moodle\moodle-rewrite',
+        $rewriter = new RewriteEngine(
+            $moodleroot,
             $logger,
             $strategy
         ); // __DIR__ . '/../moodle', $logger);

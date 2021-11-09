@@ -20,6 +20,10 @@ class ResolvedIncludeProcessor
 
     const QUOTE = '\'';
 
+    public function __construct(private ?ComponentResolver $componentResolver = null)
+    {
+    }
+
     public function categorise(string $resolvedInclude): ?string
     {
         if (preg_match('#^@[/\\\\]?$#', $resolvedInclude)) {
@@ -57,7 +61,8 @@ class ResolvedIncludeProcessor
     /**
      * Create a string of PHP code for a given resolved include.
      *
-     * This is simply the "canonical" version of the path given.
+     * This is simply the "canonical" version of the path given. This may use the $CFG variable, so
+     * calling code must check that this is available at the point in the code.
      *
      * @param string $resolvedInclude
      * @param string|null $filePath the relative file path
@@ -100,11 +105,9 @@ class ResolvedIncludeProcessor
                         $resultParts[] = '$CFG->dirroot';
                 }
             }
-        } else {
-            if (str_starts_with($includeParts[0], '@')) {
-                // There's no slash after the dirroot symbol.
-                $includeParts[0] = '{$CFG->dirroot}' . substr($includeParts[0], 1);
-            }
+        } elseif (str_starts_with($includeParts[0], '@')) {
+            // There's no slash after the dirroot symbol.
+            $includeParts[0] = '{$CFG->dirroot}' . substr($includeParts[0], 1);
         }
 
         // Extract variables from part.
@@ -143,12 +146,34 @@ class ResolvedIncludeProcessor
 
         $result = implode(' . \'/\' . ', $resultParts);
 
-        // Deal with backslashes escaping the quotes (mainly in @\ resolved path).
-        // This is a bit shoddy and could be better.
-        $result = str_replace('\\\'', '\\\\\'', $result);
-
         // Merge consecutive strings.
         return $this->mergeStrings($result);
+    }
+
+    public function toCoreCodebaseCall(string $resolvedInclude, ?string $filePath = null): ?string
+    {
+        if (!is_null($this->componentResolver)) {
+            $resolvedComponent = $this->componentResolver->resolveComponent($resolvedInclude);
+            if (!is_null($resolvedComponent)) {
+                $componentPathCall = $this->toCoreCodebaseComponentPathCall($resolvedComponent);
+                if (!is_null($componentPathCall)) {
+                    return $componentPathCall;
+                }
+            }
+        }
+        return $this->toCoreCodebasePathCall($resolvedInclude, $filePath);
+    }
+
+    private function toCoreCodebaseComponentPathCall(array $resolvedComponent): ?string
+    {
+        $variables = array_map(function (?string $part) {
+            if (is_null($part)) {
+                return 'null';
+            } else {
+                return $this->toCodeString($part);
+            }
+        }, $resolvedComponent);
+        return '\core_codebase::component_path(' . implode(', ', $variables) . ')';
     }
 
     public function toCoreCodebasePathCall(string $resolvedInclude, ?string $filePath = null): ?string
@@ -165,7 +190,7 @@ class ResolvedIncludeProcessor
         // with dirroot), making an absolute path relative (stripping dirroot off the start), or the crazy stuff
         // in \is_dataroot_insecure().
         if (preg_match('#^@[/\\\]?$#', $resolvedInclude) || preg_match(
-                '#^@{\\?DIRECTORY_SEPARATOR}$#',
+                '#^@{\\\\?DIRECTORY_SEPARATOR}$#',
                 $resolvedInclude
             )) {
             return $codeString;
@@ -211,6 +236,7 @@ class ResolvedIncludeProcessor
     {
         return str_replace(self::QUOTE . ' . ' . self::QUOTE, '', $result);
     }
+
 
     /**
      * @param string $resolvedInclude
