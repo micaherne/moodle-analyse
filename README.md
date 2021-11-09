@@ -1,14 +1,20 @@
 Moodle Analyse
 ===
 
-This is a project to use PhpParser to analyse the Moodle codebase (PHP only), and potentially fix issues and improve the codebase by rewriting it.
+This is a project to use PhpParser to rewrite the Moodle codebase (PHP only) to enable it to use modern features such as:
 
-Potential improvements
+* front controller / page controller classes
+* dependency injection
+* composer
+
+Background
 ---
+It could be argued that the current Moodle codebase is a "legacy" codebase in the sense that it does not make use of many standard modern programming methods and patterns (e.g. https://www.packtpub.com/product/modernizing-legacy-applications-in-php/9781787124707).
 
-* Replace relative includes with ones using $CFG->dirroot etc.
-* Find class definitions that are not autoloaded, and move them to the classes directory
-* Find files that only define functions and rewrite them to be autoloaded classes instead
+For example:
+
+* the lack of a front controller forces the entire codebase to be hosted in the web root of a server, including the configuration file, arguably a security concern
+* the codebase relies heavily on global variables, which may be helped if dependency injection were available
 
 Exploratory things
 ---
