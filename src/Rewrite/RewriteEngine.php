@@ -105,8 +105,8 @@ class RewriteEngine
 
             $relativePathname = (string)str_replace('\\', '/', $file->getRelativePathname());
 
-            // TODO: Should maybe get the list of excluded files from the strategy.
-            if (in_array($relativePathname, $this->excludedFiles)) {
+            $excludedFiles = $this->strategy->getExcludedFiles();
+            if (in_array($relativePathname, $excludedFiles)) {
                 $this->logger->info("Ignoring excluded file $relativePathname");
                 continue;
             }
