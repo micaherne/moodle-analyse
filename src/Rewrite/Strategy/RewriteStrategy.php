@@ -37,4 +37,12 @@ interface RewriteStrategy
      * @return array[]
      */
     public function getCurrentFileLogData(): array;
+
+    /**
+     * Add any new files required.
+     *
+     * @param string $moodleroot
+     */
+    public function addFiles(string $moodleroot): void;
+
 }

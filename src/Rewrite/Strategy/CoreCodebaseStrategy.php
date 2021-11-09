@@ -76,7 +76,6 @@ class CoreCodebaseStrategy implements RewriteStrategy
         ];
 
         foreach ($pathNodes as $pathNode) {
-
             $code = substr(
                 $fileContents,
                 $pathNode->getStartFilePos(),
@@ -98,7 +97,11 @@ class CoreCodebaseStrategy implements RewriteStrategy
             //  to see whether this is a problem or not (e.g. \tool_behat_manager_util_testcase::$corefeatures)
             if ($pathNode->getAttribute(PathFindingVisitor::ATTR_IN_PROPERTY_DEF)) {
                 $this->logger->info("Ignoring as path is in a property definition");
-                $this->currentFileLogData['ignored'][] = [$pathNode->getStartLine(), $code, 'Inside property definition'];
+                $this->currentFileLogData['ignored'][] = [
+                    $pathNode->getStartLine(),
+                    $code,
+                    'Inside property definition'
+                ];
                 continue;
             }
 
@@ -156,6 +159,8 @@ class CoreCodebaseStrategy implements RewriteStrategy
         return $rewrites;
     }
 
+
+
     /**
      * @return array[]
      */
@@ -165,6 +170,9 @@ class CoreCodebaseStrategy implements RewriteStrategy
     }
 
 
-
+    public function addFiles(string $moodleroot): void
+    {
+        copy(__DIR__ . '/../../../resources/codebase.php', $moodleroot . '/lib/classes/codebase.php');
+    }
 
 }

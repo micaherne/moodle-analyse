@@ -167,6 +167,8 @@ class RewriteEngine
 
         }
 
+        $this->strategy->addFiles($this->moodleroot);
+
         foreach ($this->rewriteLogFiles as $logFile) {
             fclose($logFile);
         }
