@@ -62,7 +62,7 @@ $app->add(new class() extends Command {
         $componentResolver = new ComponentResolver($moodleroot);
         $resolvedIncludeProcessor = new ResolvedIncludeProcessor($componentResolver);
 
-        $strategy = new CoreCodebaseStrategy($logger, $resolvedIncludeProcessor);
+        $strategy = new CoreCodebaseStrategy($logger, $resolvedIncludeProcessor, $componentResolver);
 
         $rewriter = new RewriteEngine(
             $moodleroot,

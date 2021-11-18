@@ -575,6 +575,7 @@ class PathResolvingVisitor extends NodeVisitorAbstract implements FileAwareInter
                     . '::' . $node->name->toString() . '(' . implode(', ', $args) . ')}');
             }
         } elseif ($node instanceof Node\Expr\ArrayDimFetch) {
+            // TODO: $node->var might be a StaticPropertyFetch in which case $node->dim is null.
             if ($node->dim instanceof Node\Scalar\String_) {
                 $dim = "'" . $node->dim->value . "'";
             } elseif ($node->dim instanceof Node\Scalar\LNumber) {

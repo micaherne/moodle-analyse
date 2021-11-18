@@ -18,6 +18,13 @@ class ComponentResolver
 
     protected string $componentsJsonLocation;
 
+    /**
+     * An index of the plugin type root directories.
+     *
+     * @var string[] root directory (relative) => plugin type
+     */
+    private array $pluginTypeRoots = [];
+
     // Taken from core_component.
     // TODO: We should use the parser to get this.
     protected static $ignoreddirs = [
@@ -45,19 +52,34 @@ class ComponentResolver
         $this->componentsJsonLocation = $this->moodleroot . '/lib/components.json';
     }
 
+    /**
+     * @return string[]
+     * @throws \Exception
+     */
+    public function getPluginTypeRoots(): array
+    {
+        // TODO: This is a bit poor - the pluginTypeRoots should be initialised somewhere else.
+        if ($this->tree === []) {
+            $this->buildTree();
+        }
+
+        return $this->pluginTypeRoots;
+    }
+
+    /**
+     * Build a tree of components for resolving component.
+     *
+     * Also extracts any plugin type root directories found.
+     *
+     * @throws \Exception
+     */
     private function buildTree()
     {
-        if (!file_exists($this->componentsJsonLocation)) {
-            throw new \Exception("components.json not found at $this->componentsJsonLocation");
-        }
-        $data = json_decode(file_get_contents($this->componentsJsonLocation));
-
-        if (!$data) {
-            throw new \Exception("Unable to read components.json");
-        }
-        $componentsJsonData = $data;
+        $componentsJsonData = $this->getCoreComponentsData();
 
         $this->addComponentsDataToTree($componentsJsonData);
+
+        $this->extractPluginTypeRoots($componentsJsonData);
 
         // Because lib is the root of the core component.
         $this->tree['lib'][self::SUBSYSTEM_ROOT] = null;
@@ -65,6 +87,8 @@ class ComponentResolver
         $subpluginsJsonData = $this->getSubpluginData($componentsJsonData);
         foreach ($subpluginsJsonData as $plugin => $data) {
             $this->addComponentsDataToTree($data);
+
+            $this->extractPluginTypeRoots($data);
 
             // We now have a node for the plugin containing the subplugins, so we need to mark
             // this as a plugin root.
@@ -87,10 +111,10 @@ class ComponentResolver
     /**
      * Add the data from a components.json file to the tree.
      *
-     * @param mixed $componentsJsonData
+     * @param object $componentsJsonData
      * @return void
      */
-    private function addComponentsDataToTree(mixed $componentsJsonData): void
+    private function addComponentsDataToTree(object $componentsJsonData): void
     {
         foreach (['plugintypes' => self::PLUGIN_TYPE_ROOT, 'subsystems' => self::SUBSYSTEM_ROOT] as $type => $key) {
             // Subplugins files only have the plugintypes key.
@@ -277,6 +301,34 @@ class ComponentResolver
             return (bool)preg_match('/^[a-z][a-z0-9]*$/', $pluginName);
         } else {
             return (bool)preg_match('/^[a-z](?:[a-z0-9_](?!__))*[a-z0-9]+$/', $pluginName);
+        }
+    }
+
+    /**
+     * @return object
+     * @throws \Exception
+     */
+    private function getCoreComponentsData(): object
+    {
+        if (!file_exists($this->componentsJsonLocation)) {
+            throw new \Exception("components.json not found at $this->componentsJsonLocation");
+        }
+        $data = json_decode(file_get_contents($this->componentsJsonLocation));
+
+        if (!$data) {
+            throw new \Exception("Unable to read components.json");
+        }
+        return $data;
+    }
+
+    private function extractPluginTypeRoots(object $componentsJsonData): void
+    {
+        if (!property_exists($componentsJsonData, 'plugintypes')) {
+            return;
+        }
+
+        foreach ($componentsJsonData->plugintypes as $plugintype => $dir) {
+            $this->pluginTypeRoots[$dir] = $plugintype;
         }
     }
 }

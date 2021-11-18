@@ -47,16 +47,11 @@ class ComponentResolverTest extends TestCase
         }
         echo var_export($result);
     }*/
+    private $componentResolver;
 
-    /**
-     * @dataProvider resolveComponentData
-     * @param string $resolvedInclude
-     * @param array|null $expected
-     * @throws Exception
-     */
-    public function testResolveComponent(string $resolvedInclude, ?array $expected)
+    protected function setUp(): void
     {
-        $componentResolver = new class(__DIR__ . '/../../moodle') extends ComponentResolver {
+        $this->componentResolver = new class(__DIR__ . '/../../moodle') extends ComponentResolver {
             public function __construct(string $moodleroot)
             {
                 parent::__construct($moodleroot);
@@ -161,8 +156,25 @@ class ComponentResolverTest extends TestCase
 
 
         };
+    }
 
-        $this->assertEquals($expected, $componentResolver->resolveComponent($resolvedInclude));
+    public function testGetPluginTypeRoots()
+    {
+        $pluginTypeRoots = $this->componentResolver->getPluginTypeRoots();
+        $this->assertArrayHasKey('mod', $pluginTypeRoots);
+        $this->assertEquals('mod', $pluginTypeRoots['mod']);
+        $this->assertEquals('datafield', $pluginTypeRoots['mod/data/field']);
+    }
+
+    /**
+     * @dataProvider resolveComponentData
+     * @param string $resolvedInclude
+     * @param array|null $expected
+     * @throws Exception
+     */
+    public function testResolveComponent(string $resolvedInclude, ?array $expected)
+    {
+        $this->assertEquals($expected, $this->componentResolver->resolveComponent($resolvedInclude));
     }
 
     public function resolveComponentData(): Generator

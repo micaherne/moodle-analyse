@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace MoodleAnalyse\Rewrite\Strategy;
 
+use MoodleAnalyse\Codebase\ComponentResolver;
 use MoodleAnalyse\Codebase\ResolvedIncludeProcessor;
 use MoodleAnalyse\Rewrite\Rewrite;
 use MoodleAnalyse\Visitor\PathFindingVisitor;
@@ -46,7 +47,8 @@ class CoreCodebaseStrategy implements RewriteStrategy
 
     public function __construct(
         private LoggerInterface $logger,
-        private ResolvedIncludeProcessor $resolvedIncludeProcessor
+        private ResolvedIncludeProcessor $resolvedIncludeProcessor,
+        private ComponentResolver $componentResolver
     ) {
         $this->pathResolvingVisitor = new PathResolvingVisitor();
         $this->pathFindingVisitor = new PathFindingVisitor();
@@ -82,8 +84,11 @@ class CoreCodebaseStrategy implements RewriteStrategy
 
         $this->currentFileLogData = [
             'ignored' => [],
-            'rewritten' => []
+            'rewritten' => [],
+            'pluginroot' => []
         ];
+
+        $pluginTypeRoots = $this->componentResolver->getPluginTypeRoots();
 
         foreach ($pathNodes as $pathNode) {
             $code = substr(
@@ -141,6 +146,19 @@ class CoreCodebaseStrategy implements RewriteStrategy
                     $relativeFilePath
                 );
             } else {
+
+                // Check if it's a plugintype root.
+                if (str_starts_with($resolvedInclude, '@/') && !str_contains($resolvedInclude, '{')) {
+                    $path = rtrim(substr($resolvedInclude, 2), '/');
+                    if (array_key_exists($path, $pluginTypeRoots)) {
+                        $this->currentFileLogData['pluginroot'][] = [
+                            $pathNode->getStartLine(),
+                            $code,
+                            'Plugin root for ' . $pluginTypeRoots[$path]
+                        ];
+                    }
+                }
+
                 $codeString = $this->resolvedIncludeProcessor->toCoreCodebaseCall(
                     $resolvedInclude,
                     $relativeFilePath
