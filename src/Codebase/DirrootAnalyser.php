@@ -110,7 +110,7 @@ class DirrootAnalyser
                         $parentFunctionName = $parentFunction->name->toString();
                         if ($parentFunctionName === 'substr') {
                             // TODO: We need to check this further.
-                            //return [$parentFunction, self::ABSOLUTE_PATH_TO_RELATIVE];
+                            return [$parentFunction, self::ABSOLUTE_PATH_TO_RELATIVE];
                         } else {
                             echo "What is this?\n";
                         }
@@ -138,8 +138,13 @@ class DirrootAnalyser
                 echo "Unknown argument parent: $argParentClass\n";
             }
         } else {
-            $parentClass = get_class($parent);
-            echo "Unknown parent: $parentClass\n";
+            if (is_object($parent)) {
+                $parentClass = get_class($parent);
+                echo "Unknown parent: $parentClass\n";
+            } else {
+                echo "Parent not found\n";
+            }
+
         }
 
         // Try and return the containing expression.

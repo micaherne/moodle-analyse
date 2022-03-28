@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace MoodleAnalyse\Rewrite;
 
 use Exception;
+use MoodleAnalyse\Codebase\ComponentResolver;
 use MoodleAnalyse\File\FileFinder;
 use MoodleAnalyse\Rewrite\Strategy\RewriteStrategy;
 use MoodleAnalyse\Visitor\FileAwareInterface;
@@ -45,9 +46,9 @@ class RewriteEngine
      */
     private array $traversers = [];
 
-    private $rewriteLogDirectory;
+    private string $rewriteLogDirectory;
 
-    private $rewriteLogFiles = [];
+    private array $rewriteLogFiles = [];
 
     public function __construct(
         private string $moodleroot,
@@ -90,6 +91,8 @@ class RewriteEngine
         }
 
         $start = time();
+
+        $componentResolver = new ComponentResolver($this->moodleroot);
 
         /** @var SplFileInfo $file */
         foreach ($finder->getFileIterator() as $file) {
@@ -141,7 +144,21 @@ class RewriteEngine
                 $rewritten = substr_replace($rewritten, $rewrite->getCode(), $rewrite->getStartPos(), $rewrite->getLength());
             }
 
-            file_put_contents($file->getPathname(), $rewritten);
+            $pathComponent = $componentResolver->resolveComponent($relativePathname);
+            $outputFile = '\\\\wsl$\Ubuntu-20.04\home\michael\dev\moodle\moodle-rewrite-split\moodle-' . $pathComponent[0] . '_';
+            if (is_null($pathComponent[1])) {
+                $outputFile .= 'lib';
+            } else {
+                $outputFile .= $pathComponent[1];
+            }
+            $outputFile .= '/' . $pathComponent[2];
+            $this->logger->debug("Writing $outputFile");
+            if (!file_exists(dirname($outputFile))) {
+                mkdir(dirname($outputFile), 0777, true);
+            }
+            file_put_contents($outputFile, $rewritten);
+
+            // file_put_contents($file->getPathname(), $rewritten);
 
             // Log what's been done.
             foreach ($this->strategy->getCurrentFileLogData() as $logType => $items) {

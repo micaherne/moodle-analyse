@@ -9,6 +9,8 @@ use MoodleAnalyse\Codebase\ResolvedIncludeProcessor;
 use MoodleAnalyse\Rewrite\Rewrite;
 use MoodleAnalyse\Visitor\PathFindingVisitor;
 use MoodleAnalyse\Visitor\PathResolvingVisitor;
+use PhpParser\Node;
+use PhpParser\Node\Expr\Include_;
 use PhpParser\NodeVisitor;
 use Psr\Log\LoggerInterface;
 
@@ -91,11 +93,7 @@ class CoreCodebaseStrategy implements RewriteStrategy
         $pluginTypeRoots = $this->componentResolver->getPluginTypeRoots();
 
         foreach ($pathNodes as $pathNode) {
-            $code = substr(
-                $fileContents,
-                $pathNode->getStartFilePos(),
-                ($pathNode->getEndFilePos() - $pathNode->getStartFilePos()) + 1
-            );
+            $code = $this->nodeCode($fileContents, $pathNode);
 
             // Ensure $CFG is available.
             /*if (!$pathNode->getAttribute(PathResolvingVisitor::CFG_AVAILABLE)
@@ -140,11 +138,23 @@ class CoreCodebaseStrategy implements RewriteStrategy
                 continue;
             }
 
+            $rewriteNode = $pathNode;
+
             if ($resolvedInclude === '@/config.php') {
-                $codeString = $this->resolvedIncludeProcessor->toCodeString(
+                /*$codeString = $this->resolvedIncludeProcessor->toCodeString(
                     $resolvedInclude,
                     $relativeFilePath
-                );
+                );*/
+                $parent = $pathNode->getAttribute('parent');
+                if ($parent instanceof Include_) {
+                    $rewriteNode = $parent;
+                    $codeString = '\core_config::configure()';
+                } elseif ($parent instanceof Node\Expr\FuncCall) {
+                    $codeString = $this->resolvedIncludeProcessor->toCodeString(
+                        $resolvedInclude,
+                        $relativeFilePath
+                    );
+                }
             } else {
 
                 // Check if it's a plugintype root.
@@ -172,12 +182,16 @@ class CoreCodebaseStrategy implements RewriteStrategy
             }
 
             $rewrites[] = new Rewrite(
-                $pathNode->getStartFilePos(),
-                $pathNode->getEndFilePos(),
+                $rewriteNode->getStartFilePos(),
+                $rewriteNode->getEndFilePos(),
                 $codeString
             );
 
-            $this->currentFileLogData['rewritten'][] = [$pathNode->getStartLine(), $code, $codeString];
+            if ($rewriteNode !== $pathNode) {
+                $code = $this->nodeCode($fileContents, $rewriteNode);
+            }
+
+            $this->currentFileLogData['rewritten'][] = [$rewriteNode->getStartLine(), $code, $codeString];
         }
 
         // Try to be nice to the garbage collector. We don't want any references to nodes left or we'll use up
@@ -217,11 +231,7 @@ class CoreCodebaseStrategy implements RewriteStrategy
     private function getCodebaseIncludeRewrite(array $nodes, string $fileContents, string $relativeFilePath): Rewrite
     {
         $firstNode = $nodes[0];
-        $code = substr(
-            $fileContents,
-            $firstNode->getStartFilePos(),
-            ($firstNode->getEndFilePos() - $firstNode->getStartFilePos()) + 1
-        );
+        $code = $this->nodeCode($fileContents, $firstNode);
 
         $require = 'require_once(__DIR__ . \''
             . str_repeat('/..', substr_count($relativeFilePath, '/'))
@@ -231,6 +241,22 @@ class CoreCodebaseStrategy implements RewriteStrategy
         $this->currentFileLogData['rewritten'][] = [$firstNode->getStartLine(), $code, $rewrittenCode];
 
         return new Rewrite($firstNode->getStartFilePos(), $firstNode->getEndFilePos(), $rewrittenCode);
+    }
+
+    /**
+     * Get the code for a node.
+     *
+     * @param string $fileContents
+     * @param Node $pathNode
+     * @return string
+     */
+    private function nodeCode(string $fileContents, Node $pathNode): string
+    {
+        return substr(
+            $fileContents,
+            $pathNode->getStartFilePos(),
+            ($pathNode->getEndFilePos() - $pathNode->getStartFilePos()) + 1
+        );
     }
 
 }

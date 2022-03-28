@@ -67,7 +67,6 @@ class core_codebase
         }
 
         $componentpaths = self::get_component_paths();
-        $libdir = __DIR__ . '/..';
 
         if ($type === 'core') {
             // If name is null libdir will have been returned earlier.
