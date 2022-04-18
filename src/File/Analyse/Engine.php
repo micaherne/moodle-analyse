@@ -5,6 +5,7 @@ namespace MoodleAnalyse\File\Analyse;
 
 use Exception;
 use MoodleAnalyse\Codebase\ComponentIdentifier;
+use MoodleAnalyse\Codebase\ComponentResolver;
 use MoodleAnalyse\File\FileFinder;
 use MoodleAnalyse\File\Index\BasicObjectIndex;
 use MoodleAnalyse\File\Index\Index;
@@ -26,7 +27,7 @@ class Engine
     private NodeTraverser $traverser;
     private FunctionDefinitionAnalyser $functionDefinitionAnalyser;
     private IncludeAnalyser $includeAnalyser;
-    private ComponentIdentifier $componentIdentifier;
+    private ComponentResolver $componentResolver;
     private array $analysers = [];
 
     /** @var Index[] */
@@ -55,7 +56,7 @@ class Engine
 
         $this->functionDefinitionAnalyser = new FunctionDefinitionAnalyser();
         $this->includeAnalyser = new IncludeAnalyser();
-        $this->componentIdentifier = new ComponentIdentifier($this->moodleroot);
+        $this->componentResolver = new ComponentResolver($this->moodleroot);
 
         /**
          * @var FileAnalyser[]
@@ -66,8 +67,8 @@ class Engine
 
         /** @var FileAnalyser $analyser */
         foreach ($this->analysers as $analyser) {
-            if ($analyser instanceof UsesComponentIdentifier) {
-                $analyser->setComponentIdentifier($this->componentIdentifier);
+            if ($analyser instanceof UsesComponentResolver) {
+                $analyser->setComponentResolver($this->componentResolver);
             }
             foreach ($analyser->getNodeVisitors() as $visitor) {
                 $this->traverser->addVisitor($visitor);
@@ -87,13 +88,19 @@ class Engine
 
         $parsedFilesCount = 0;
 
+        foreach ($this->indexes as $index) {
+            $index->reset();
+        }
+
         /** @var SplFileInfo $file */
         foreach ($this->fileFinder->getFileIterator() as $file) {
             echo sprintf("Analysing file: %s\n", $file->getRelativePathname());
             $fileContents = $file->getContents();
-            $component = $this->componentIdentifier->fileComponent($file->getRelativePathname());
+            $component = $this->componentResolver->resolveComponent($file->getRelativePathname());
 
-            $fileDetails = new FileDetails($file, $fileContents, $component);
+            $pathWithinComponent = array_pop($component);
+            $componentString = implode('_', $component);
+            $fileDetails = new FileDetails($file, $fileContents, $componentString, $pathWithinComponent);
 
             foreach ($this->analysers as $analyser) {
                 $analyser->setFileDetails($fileDetails);
@@ -104,6 +111,10 @@ class Engine
 
             foreach ($this->analysers as $analyser) {
                 $analysis = $analyser->getAnalysis();
+                if (empty($analysis)) {
+                    continue;
+                }
+
                 foreach ($this->indexes as $index) {
                     if (in_array(get_class($analyser), $index->getSources())) {
                         $index->index($analysis, get_class($analyser));
@@ -137,12 +148,5 @@ class Engine
         }
         fclose($out);
     }
-
-    public function addIndex(BasicObjectIndex $index)
-    {
-        $index->setIndexDirectory($this->indexDirectory);
-        $this->indexes[] = $index;
-    }
-
 
 }

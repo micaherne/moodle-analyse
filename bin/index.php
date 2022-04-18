@@ -10,7 +10,7 @@ if (!is_dir($indexDirectory)) {
     mkdir($indexDirectory);
 }
 
-$moodleroot = __DIR__ . '/../moodle';
+$moodleroot = '\\\\wsl$\Ubuntu-20.04\home\michael\dev\moodle\moodle-rewrite'; // __DIR__ . '/../moodle';
 
 $engine = new Engine($moodleroot, $indexDirectory);
 

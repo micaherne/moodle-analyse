@@ -84,4 +84,8 @@ class BasicObjectIndex implements Index
     }
 
 
+    public function reset()
+    {
+        // TODO: Implement reset() method.
+    }
 }

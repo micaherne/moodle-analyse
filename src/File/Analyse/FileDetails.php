@@ -10,17 +10,20 @@ class FileDetails
     private SplFileInfo $fileInfo;
     private string $contents;
     private string $component;
+    private string $pathWithinComponent;
 
     /**
      * @param SplFileInfo $fileInfo
      * @param string $contents
      * @param string $component
+     * @param string $pathWithinComponent
      */
-    public function __construct(SplFileInfo $fileInfo, string $contents, string $component)
+    public function __construct(SplFileInfo $fileInfo, string $contents, string $component, string $pathWithinComponent)
     {
         $this->fileInfo = $fileInfo;
         $this->contents = $contents;
         $this->component = $component;
+        $this->pathWithinComponent = $pathWithinComponent;
     }
 
     /**
@@ -45,6 +48,14 @@ class FileDetails
     public function getComponent(): string
     {
         return $this->component;
+    }
+
+    /**
+     * @return string
+     */
+    public function getPathWithinComponent(): string
+    {
+        return $this->pathWithinComponent;
     }
 
 

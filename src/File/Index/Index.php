@@ -9,8 +9,10 @@ interface Index
 
     public function index($analysis, ?string $sourceClass = null);
 
+    public function reset();
+
     /**
-     * @param string $indexDirectory
+     * @param string $indexName
      */
     public function setIndexDirectory(string $indexDirectory): void;
 }
