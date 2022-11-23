@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace MoodleAnalyse\Rewrite\Strategy;
 
-use MoodleAnalyse\Codebase\ResolvedIncludeProcessor;
+use MoodleAnalyse\Codebase\ResolvedPathProcessor;
 use MoodleAnalyse\Rewrite\Rewrite;
 use MoodleAnalyse\Visitor\PathFindingVisitor;
 use MoodleAnalyse\Visitor\PathResolvingVisitor;
@@ -33,7 +33,7 @@ class CanonicalStrategy implements RewriteStrategy
 
     public function __construct(
         private LoggerInterface $logger,
-        private ResolvedIncludeProcessor $resolvedIncludeProcessor
+        private ResolvedPathProcessor $resolvedIncludeProcessor
     ) {
         $this->pathResolvingVisitor = new PathResolvingVisitor();
         $this->pathFindingVisitor = new PathFindingVisitor();
@@ -108,7 +108,7 @@ class CanonicalStrategy implements RewriteStrategy
             $resolvedInclude = $pathNode->getAttribute('resolvedInclude');
             $category = $this->resolvedIncludeProcessor->categorise($resolvedInclude);
 
-            if (!is_null($category) && str_starts_with($category, 'suspect')) {
+            if (!is_null($category) && str_starts_with($category->name, 'suspect')) {
                 $this->logger->debug("Ignoring suspect rewrite {$relativeFilePath}: {$pathNode->getStartFilePos()}");
                 $this->currentFileLogData['ignored'][] = [$pathNode->getStartLine(), $code, 'Suspect resolved path'];
                 continue;

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace MoodleAnalyse\Rewrite\Strategy;
 
 use MoodleAnalyse\Codebase\ComponentResolver;
-use MoodleAnalyse\Codebase\ResolvedIncludeProcessor;
+use MoodleAnalyse\Codebase\ResolvedPathProcessor;
 use MoodleAnalyse\Rewrite\Rewrite;
 use MoodleAnalyse\Visitor\PathFindingVisitor;
 use MoodleAnalyse\Visitor\PathResolvingVisitor;
@@ -49,7 +49,7 @@ class CoreCodebaseStrategy implements RewriteStrategy
 
     public function __construct(
         private LoggerInterface $logger,
-        private ResolvedIncludeProcessor $resolvedIncludeProcessor,
+        private ResolvedPathProcessor $resolvedIncludeProcessor,
         private ComponentResolver $componentResolver
     ) {
         $this->pathResolvingVisitor = new PathResolvingVisitor();

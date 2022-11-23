@@ -171,6 +171,11 @@ class ComponentResolver
 
         $path = ltrim($path, '/');
 
+        // If there's nothing left it's dirroot.
+        if (strlen($path) === 0) {
+            return ['core', 'root', ''];
+        }
+
         // We can't determine anything if it starts with a variable.
         if (str_starts_with($path, '{')) {
             return null;
@@ -209,7 +214,8 @@ class ComponentResolver
                 // We can't use pathItem any more.
                 $pathItem = null;
 
-                if (count($pathParts) !== 0) {
+                // The second clause here is to deal with bare component directories, e.g. @/lib/
+                if (count($pathParts) !== 0 && !(count($pathParts) === 1 && $pathParts[0] === '')) {
                     continue;
                 } else {
                     // It might be just a plugin root or a subsystem directory with no path.
@@ -224,12 +230,42 @@ class ComponentResolver
 
             $remainingPath = implode('/', $pathParts);
             if (array_key_exists(self::PLUGIN_ROOT, $currentNode)) {
+                // Check if we have a substitution that might result in a subplugin root.
+                // Unfortunately we don't have enough data to return a coherent dynamic component name:
+                // e.g. @/mod/quiz/{$shortsubtype}/{$plugin}/settings.php (not a real one from code)
+                // where if $shortsubtype is report the component name is quiz and if accessrule it's
+                // quizaccess.
+                // Note that we need the starts and ends with calls here to avoid dynamic filenames being rejected,
+                // e.g. @/mod/scorm/datamodels/{$scorm->version}lib.php
+                if (count($pathParts) > 0 && str_starts_with($pathParts[0], '{') && str_ends_with($pathParts[0], '}')) {
+                    foreach ($currentNode as $dirname => $values) {
+                        if ($dirname === self::PLUGIN_ROOT || $dirname === self::PLUGIN_TYPE_ROOT) {
+                            continue;
+                        }
+                        if (array_key_exists(self::PLUGIN_TYPE_ROOT, $values)) {
+                            return null;
+                        }
+                    }
+                }
+
                 // There's no point recalculating this.
                 return $lastPluginRootValue;
             } elseif (array_key_exists(self::PLUGIN_TYPE_ROOT, $currentNode)) {
                 $pluginType = $currentNode[self::PLUGIN_TYPE_ROOT];
 
                 if (!is_null($pathItem) && $this->isValidPluginName($pluginType, $pathItem)) {
+                    // If it's a plugin root + a variable, it could be either a plugin directory or a full path.
+                    // We use a variable name heuristic here, which may not be 100% accurate but it appears to work
+                    // surprisingly well with the core codebase. It's basically "is it a simple variable name and does
+                    // it not contain the word 'file'".
+                    if (count($pathParts) === 0 && str_starts_with($pathItem, '{')) {
+                        if (preg_match('/^\{\\$[a-z0-9]+}$/', $pathItem)) {
+                            if (str_contains($pathItem, 'file') || str_contains($pathItem, 'path')) {
+                                return null;
+                            }
+                        }
+                        return [$pluginType, $pathItem, ''];
+                    }
                     if (count($pathParts) === 1 && $pathParts[0] == '') {
                         // If there's a trailing slash we have the last part as the empty string, but this
                         // won't result in a trailing slash if it's the only thing there, as there's no insertion

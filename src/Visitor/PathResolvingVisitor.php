@@ -17,8 +17,6 @@ use Symfony\Component\Finder\SplFileInfo;
  * Variables, including array fetches and object properties, and method calls are surrounded by
  * braces, e.g.
  *
- * @todo Take a note of whether the include or path is inside a function where global $CFG doesn't exist.
- *
  * @/user/profile/field/{$proffields[$field]->datatype}/field.class.php
  *
  */
@@ -225,7 +223,7 @@ class PathResolvingVisitor extends NodeVisitorAbstract implements FileAwareInter
         }
 
         if (!$this->insidePathNode) {
-            return;
+            return null;
         }
 
         $this->overridePathComponents($node);

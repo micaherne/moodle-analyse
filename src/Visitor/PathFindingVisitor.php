@@ -49,6 +49,8 @@ class PathFindingVisitor extends NodeVisitorAbstract
         if ($node instanceof Node\Scalar\MagicConst\Dir || $node instanceof Node\Scalar\MagicConst\File) {
             $this->findPotentialFilePath($node);
         }
+
+        return null;
     }
 
     public function leaveNode(Node $node)
@@ -56,6 +58,7 @@ class PathFindingVisitor extends NodeVisitorAbstract
         if ($node instanceof Node\Stmt\Property) {
             $this->insidePropertyDefinition = false;
         }
+        return null;
     }
 
 
@@ -80,25 +83,21 @@ class PathFindingVisitor extends NodeVisitorAbstract
             // We need to ignore dirname() as this is likely to be part of the path.
             if ($this->isDirnameCall($function)) {
                 return $this->findRelevantParent($parent);
+            } elseif ($parent->value === $node) {
+                return $node;
             } else {
-                if ($parent->value === $node) {
-                    return $node;
-                } else {
-                    echo "what happens here?\n";
-                }
+                echo "what happens here?\n";
             }
         }
 
         if ($parent instanceof Node\Expr\Assign) {
             if ($parent->expr === $node) {
                 return $node;
+            } elseif ($parent->var === $node) {
+                // It's an assignment to e.g. $CFG->dirroot
+                return null;
             } else {
-                if ($parent->var === $node) {
-                    // It's an assignment to e.g. $CFG->dirroot
-                    return null;
-                } else {
-                    echo "what?";
-                }
+                echo "what?";
             }
         }
 

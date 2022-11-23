@@ -12,9 +12,9 @@ class ResolvedIncludeProcessorTest extends TestCase
      * @param string $resolvedInclude
      * @param string $expectedCategory
      */
-    public function testCategorise(string $resolvedInclude, string $expectedCategory)
+    public function testCategorise(string $resolvedInclude, PathCategory $expectedCategory): void
     {
-        $processor = new ResolvedIncludeProcessor();
+        $processor = new ResolvedPathProcessor();
         $category = $processor->categorise($resolvedInclude);
         $this->assertEquals($expectedCategory, $category);
     }
@@ -26,14 +26,14 @@ class ResolvedIncludeProcessorTest extends TestCase
      */
     public function testToCodeString(string $resolvedInclude, string $expectedOutput)
     {
-        $processor = new ResolvedIncludeProcessor();
+        $processor = new ResolvedPathProcessor();
         $output = $processor->toCodeString($resolvedInclude);
         $this->assertEquals($expectedOutput, $output);
     }
 
     public function testToCodeStringConfig()
     {
-        $processor = new ResolvedIncludeProcessor();
+        $processor = new ResolvedPathProcessor();
         $this->assertEquals('__DIR__ . \'/../../config.php\'',
             $processor->toCodeString('@/config.php', 'lib/test/something.php'));
         $this->assertEquals('__DIR__ . \'/config.php\'',
@@ -48,7 +48,7 @@ class ResolvedIncludeProcessorTest extends TestCase
      */
     public function testSplitResolvedInclude(string $resolvedInclude, array|false $expected)
     {
-        $processor = new ResolvedIncludeProcessor();
+        $processor = new ResolvedPathProcessor();
         $method = (new \ReflectionClass($processor))
             ->getMethod('splitResolvedInclude');
         $method->setAccessible(true);
@@ -57,7 +57,7 @@ class ResolvedIncludeProcessorTest extends TestCase
 
     public function testToCoreCodebasePathCall()
     {
-        $processor = new ResolvedIncludeProcessor();
+        $processor = new ResolvedPathProcessor();
         $this->assertEquals('$CFG->dirroot', $processor->toCoreCodebasePathCall('@'));
         $this->assertEquals('$CFG->dirroot . \'/\'', $processor->toCoreCodebasePathCall('@/'));
         $this->assertEquals('$CFG->dirroot . \'\\\'', $processor->toCoreCodebasePathCall('@\\'));
@@ -69,22 +69,22 @@ class ResolvedIncludeProcessorTest extends TestCase
     public function categoriseTestData()
     {
 
-        yield ['@', 'dirroot'];
-        yield ['@/', 'dirroot'];
-        yield ['@\\', 'dirroot'];
-        yield ['@/config.php', 'config'];
-        yield ['@/lib/moodlelib.php', 'simple file'];
-        yield ['@/filter/tex/mimetex.linux.aarch64', 'simple file'];
-        yield ['@/lib/editor', 'simple dir'];
-        yield ['{$fullpath}', 'single var'];
-        yield ['@/{$somevariable}', 'full relative path'];
-        yield ['@/Some string that happens to contain dirroot @', 'suspect - embedded @'];
-        yield ['@/admin/settings/*.php', 'glob'];
-        yield ['{$fullblock}/db/install.php', 'fulldir relative'];
-        yield ['@/blocks/{$blockname}/version.php', 'simple dynamic file'];
-        yield ['@/mod/{$modname}/backup/moodle1/lib.php', 'simple dynamic file'];
-        yield ['@/mod/{$data[\'modulename\']}/version.php', 'simple dynamic file'];
-        yield ['@/completion/criteria/{$object}.php', 'filename substitution'];
+        yield ['@', PathCategory::DirRoot];
+        yield ['@/', PathCategory::DirRoot];
+        yield ['@\\', PathCategory::DirRoot];
+        yield ['@/config.php', PathCategory::Config];
+        yield ['@/lib/moodlelib.php', PathCategory::SimpleFile];
+        yield ['@/filter/tex/mimetex.linux.aarch64', PathCategory::SimpleFile];
+        yield ['@/lib/editor', PathCategory::SimpleDir];
+        yield ['{$fullpath}', PathCategory::SingleVar];
+        yield ['@/{$somevariable}', PathCategory::FullRelativePath];
+        yield ['@/Some string that happens to contain dirroot @', PathCategory::Suspect];
+        yield ['@/admin/settings/*.php', PathCategory::Glob];
+        yield ['{$fullblock}/db/install.php', PathCategory::FullDirRelative];
+        yield ['@/blocks/{$blockname}/version.php', PathCategory::SimpleDynamicFile];
+        yield ['@/mod/{$modname}/backup/moodle1/lib.php', PathCategory::SimpleDynamicFile];
+        yield ['@/mod/{$data[\'modulename\']}/version.php', PathCategory::SimpleDynamicFile];
+        yield ['@/completion/criteria/{$object}.php', PathCategory::FilenameSubstitution];
     }
 
     public function toCodeStringTestData()

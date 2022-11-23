@@ -11,6 +11,7 @@ use MoodleAnalyse\Rewrite\Strategy\RewriteStrategy;
 use MoodleAnalyse\Visitor\FileAwareInterface;
 use PhpParser\Lexer;
 use PhpParser\NodeTraverser;
+use PhpParser\NodeVisitor;
 use PhpParser\NodeVisitor\NameResolver;
 use PhpParser\NodeVisitor\ParentConnectingVisitor;
 use PhpParser\ParserFactory;
@@ -21,6 +22,7 @@ use Symfony\Component\Finder\SplFileInfo;
 class RewriteEngine
 {
 
+    /** @var array<int, string>  */
     private array $excludedFiles = [
         'install.php',
         'admin/cli/install.php',
@@ -38,6 +40,7 @@ class RewriteEngine
         'config.php' // Shouldn't be there but let's exclude it in case it is.
     ];
 
+    /** @var array<int, NodeVisitor> */
     private array $visitors = [];
 
     /**
@@ -51,9 +54,9 @@ class RewriteEngine
     private array $rewriteLogFiles = [];
 
     public function __construct(
-        private string $moodleroot,
-        private LoggerInterface $logger,
-        private RewriteStrategy $strategy
+        private readonly string $moodleroot,
+        private readonly LoggerInterface $logger,
+        private readonly RewriteStrategy $strategy
     ) {
         $this->rewriteLogDirectory = $this->moodleroot . '/.rewrite';
     }

@@ -15,44 +15,44 @@ use function substr;
 
 use const PREG_OFFSET_CAPTURE;
 
-class ResolvedIncludeProcessor
+class ResolvedPathProcessor
 {
 
-    const QUOTE = '\'';
+    private const QUOTE = '\'';
 
     public function __construct(private ?ComponentResolver $componentResolver = null)
     {
     }
 
-    public function categorise(string $resolvedInclude): ?string
+    public function categorise(string $resolvedPath): ?PathCategory
     {
-        if (preg_match('#^@[/\\\\]?$#', $resolvedInclude)) {
-            return 'dirroot';
-        } elseif ($resolvedInclude === '@/config.php') {
-            return 'config';
-        } elseif (preg_match('#^@[\d\w\-/.]+\.\w+$#', $resolvedInclude)) {
-            return 'simple file';
-        } elseif (preg_match('#^@[\d\w\-/]+/?$#', $resolvedInclude)) {
-            return 'simple dir';
-        } elseif (preg_match('#^{[^}{]+}$#', $resolvedInclude)) {
+        if (preg_match('#^@[/\\\\]?$#', $resolvedPath)) {
+            return PathCategory::DirRoot;
+        } elseif ($resolvedPath === '@/config.php') {
+            return PathCategory::Config;
+        } elseif (preg_match('#^@[\d\w\-/.]+\.\w+$#', $resolvedPath)) {
+            return PathCategory::SimpleFile;
+        } elseif (preg_match('#^@[\d\w\-/]+/?$#', $resolvedPath)) {
+            return PathCategory::SimpleDir;
+        } elseif (preg_match('#^{[^}{]+}$#', $resolvedPath)) {
             // e.g. {$somevariable}
-            return 'single var';
-        } elseif (preg_match('#^@/?{[^}{]+}$#', $resolvedInclude)) {
+            return PathCategory::SingleVar;
+        } elseif (preg_match('#^@/?{[^}{]+}$#', $resolvedPath)) {
             // e.g. @/{$somevariable}
-            return 'full relative path';
-        } elseif (preg_match('#^.+@#', $resolvedInclude)) {
-            return 'suspect - embedded @';
-        } elseif (preg_match('#\*#', $resolvedInclude)) {
-            return 'glob';
-        } elseif (preg_match('#^{[^}{]+}/[^}{]+\.\w+$#', $resolvedInclude)) {
+            return PathCategory::FullRelativePath;
+        } elseif (preg_match('#^.+@#', $resolvedPath)) {
+            return PathCategory::Suspect;
+        } elseif (preg_match('#\*#', $resolvedPath)) {
+            return PathCategory::Glob;
+        } elseif (preg_match('#^{[^}{]+}/[^}{]+\.\w+$#', $resolvedPath)) {
             # e.g. {$fullblock}/db/install.php
-            return 'fulldir relative';
-        } elseif (preg_match('#^@/(([^/]*)/)*[^/}{]*\.\w+$#', $resolvedInclude)) {
+            return PathCategory::FullDirRelative;
+        } elseif (preg_match('#^@/(([^/]*)/)*[^/}{]*\.\w+$#', $resolvedPath)) {
             # e.g. {$fullblock}/db/install.php
-            return 'simple dynamic file';
-        } elseif (preg_match('#^@/[^}{]+/{[^}{]+}\.\w+$#', $resolvedInclude)) {
+            return PathCategory::SimpleDynamicFile;
+        } elseif (preg_match('#^@/[^}{]+/{[^}{]+}\.\w+$#', $resolvedPath)) {
             # e.g. @/completion/criteria/{$object}.php
-            return 'filename substitution';
+            return PathCategory::FilenameSubstitution;
         } else {
             return null;
         }
@@ -121,11 +121,11 @@ class ResolvedIncludeProcessor
                 for ($i = 0; $i < count($matches[0]); $i++) {
                     $startPosition = $matches[0][$i][1];
                     if ($startPosition > $currentPosition) {
-                        $partResultParts[] = ResolvedIncludeProcessor::QUOTE . substr(
+                        $partResultParts[] = ResolvedPathProcessor::QUOTE . substr(
                                 $includePart,
                                 $currentPosition,
                                 $startPosition - $currentPosition
-                            ) . ResolvedIncludeProcessor::QUOTE;
+                            ) . ResolvedPathProcessor::QUOTE;
                     }
                     $partResultParts[] = $matches[1][$i][0];
                     $currentPosition = $startPosition + strlen($matches[0][$i][0]);
@@ -133,14 +133,14 @@ class ResolvedIncludeProcessor
 
                 // Add the string at the end if it's there.
                 if ($currentPosition < strlen($includePart)) {
-                    $partResultParts[] = ResolvedIncludeProcessor::QUOTE . substr(
+                    $partResultParts[] = ResolvedPathProcessor::QUOTE . substr(
                             $includePart,
                             $currentPosition
-                        ) . ResolvedIncludeProcessor::QUOTE;
+                        ) . ResolvedPathProcessor::QUOTE;
                 }
                 $resultParts[] = implode(' . ', $partResultParts);
             } else {
-                $resultParts[] = ResolvedIncludeProcessor::QUOTE . $includePart . ResolvedIncludeProcessor::QUOTE;
+                $resultParts[] = ResolvedPathProcessor::QUOTE . $includePart . ResolvedPathProcessor::QUOTE;
             }
         }
 
@@ -236,11 +236,5 @@ class ResolvedIncludeProcessor
     {
         return str_replace(self::QUOTE . ' . ' . self::QUOTE, '', $result);
     }
-
-
-    /**
-     * @param string $resolvedInclude
-     * @return string[]
-     */
 
 }

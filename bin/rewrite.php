@@ -1,7 +1,7 @@
 <?php
 
 use MoodleAnalyse\Codebase\ComponentResolver;
-use MoodleAnalyse\Codebase\ResolvedIncludeProcessor;
+use MoodleAnalyse\Codebase\ResolvedPathProcessor;
 use MoodleAnalyse\Codebase\Split\Splitter;
 use MoodleAnalyse\Rewrite\RewriteEngine;
 use MoodleAnalyse\Rewrite\Strategy\CanonicalStrategy;
@@ -30,7 +30,7 @@ $app->add(
         {
             $logger = new ConsoleLogger($output);
 
-            $resolvedIncludeProcessor = new ResolvedIncludeProcessor();
+            $resolvedIncludeProcessor = new ResolvedPathProcessor();
             $strategy = new CanonicalStrategy($logger, $resolvedIncludeProcessor);
 
             $rewriter = new RewriteEngine(
@@ -64,7 +64,7 @@ $app->add(
             $moodleroot = $input->getArgument('moodle-dir');
 
             $componentResolver = new ComponentResolver($moodleroot);
-            $resolvedIncludeProcessor = new ResolvedIncludeProcessor($componentResolver);
+            $resolvedIncludeProcessor = new ResolvedPathProcessor($componentResolver);
 
             $strategy = new CoreCodebaseStrategy($logger, $resolvedIncludeProcessor, $componentResolver);
 

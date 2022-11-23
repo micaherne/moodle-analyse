@@ -10,7 +10,7 @@ use Symfony\Component\Finder\SplFileInfo;
 
 class FileFinder
 {
-    const THIRDPARTYLIBS_XML = 'thirdpartylibs.xml';
+    private const THIRDPARTYLIBS_XML = 'thirdpartylibs.xml';
     private string $moodleroot;
 
     /**
@@ -42,17 +42,25 @@ class FileFinder
     }
 
     /**
-     * @return string[]
+     * @return array<array<int, string>>
+     * @throws Exception
      */
     private function getThirdPartyLibLocations(): array
     {
         $libFileDirectories = ['lib'];
-        $components = json_decode(file_get_contents($this->moodleroot . '/lib/components.json'));
+        $componentsJsonContents = file_get_contents($this->moodleroot . '/lib/components.json');
+        if ($componentsJsonContents === false) {
+            throw new Exception("Unable to read lib/components.json");
+        }
+        $components = json_decode($componentsJsonContents);
 
         // Find directories that may contain thirdpartylibs.xml files.
         $libFileDirectories = array_merge($libFileDirectories, array_filter(array_values((array) $components->subsystems)));
         foreach ((array) $components->plugintypes as $plugintypeRoot) {
             $dirs = scandir($this->moodleroot . '/' . $plugintypeRoot);
+            if ($dirs === false) {
+                throw new Exception("Unable to open directory $plugintypeRoot");
+            }
             foreach ($dirs as $dir) {
                 if (str_starts_with($dir, '.')) {
                     continue;
@@ -69,6 +77,9 @@ class FileFinder
                 continue;
             }
             $xml = simplexml_load_file($thirdPartyLibFile);
+            if ($xml === false) {
+                throw new Exception("Unable to read $thirdPartyLibFile as XML");
+            }
 
             // It may be a single SimpleXMLElement or an array of them.
             foreach ($xml->library as $library) {

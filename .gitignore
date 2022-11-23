@@ -3,3 +3,5 @@
 /phive.phar
 /.phpunit.result.cache
 /.idea/
+/tools/
+/temp/

@@ -174,11 +174,20 @@ class ComponentResolverTest extends TestCase
      */
     public function testResolveComponent(string $resolvedInclude, ?array $expected)
     {
-        $this->assertEquals($expected, $this->componentResolver->resolveComponent($resolvedInclude));
+        $expectedString = is_null($expected) ? 'NULL' : '[' . implode(',', $expected) . ']';
+        $this->assertEquals($expected, $this->componentResolver->resolveComponent($resolvedInclude), "$resolvedInclude should resolve to $expectedString");
     }
 
     public function resolveComponentData(): Generator
     {
+        yield ['@/mod/scorm/datamodels/{$scorm->version}lib.php', ['mod', 'scorm', 'datamodels/{$scorm->version}lib.php']];
+        // Shouldn't assume that this is theme_$file component.
+        yield ['@/theme/{$file}', null];
+        yield ['@/lib/', ['core', null, '']];
+        // TODO: If there are components under component directory we should get null if we can't determine exactly.
+        //       Note we probably can't do this with the current structure, as e.g. shortsubtype will be feedback and
+        //       the actual component type is assignfeedback which is not calculable from the data we have.
+        yield ['@/mod/assign/{$shortsubtype}/{$plugin}/settings.php', null];
         yield ['@/lib//questionlib.php', ['core', null, 'questionlib.php']];
         yield ['@/cache/stores', ['core', 'cache', 'stores']];
         yield ['@/lib', ['core', null, '']];

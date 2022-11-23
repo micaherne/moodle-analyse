@@ -1,6 +1,6 @@
 <?php
 
-use MoodleAnalyse\Codebase\ResolvedIncludeProcessor;
+use MoodleAnalyse\Codebase\ResolvedPathProcessor;
 use MoodleAnalyse\File\FileFinder;
 use MoodleAnalyse\Visitor\PathFindingVisitor;
 use MoodleAnalyse\Visitor\PathResolvingVisitor;
@@ -30,7 +30,7 @@ $processTraverser->addVisitor(new ParentConnectingVisitor());
 $pathResolvingVisitor = new PathResolvingVisitor();
 $processTraverser->addVisitor($pathResolvingVisitor);
 
-$resolvedIncludeProcessor = new ResolvedIncludeProcessor();
+$resolvedIncludeProcessor = new ResolvedPathProcessor();
 
 $out = fopen(__DIR__ . '/../relative-paths.csv', 'w');
 if ($out === false) {
