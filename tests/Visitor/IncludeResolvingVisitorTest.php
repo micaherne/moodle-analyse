@@ -2,7 +2,6 @@
 
 namespace MoodleAnalyse\Visitor;
 
-use MoodleAnalyse\Visitor\IncludeResolvingVisitor;
 use PhpParser\NodeTraverser;
 use PhpParser\NodeVisitor\ParentConnectingVisitor;
 use PhpParser\Parser;
@@ -14,23 +13,6 @@ class IncludeResolvingVisitorTest extends TestCase
     private NodeTraverser $traverser;
     private Parser $parser;
     private ParentConnectingVisitor $visitor;
-
-    protected function setUp(): void
-    {
-        $this->parser = (new ParserFactory())->create(ParserFactory::PREFER_PHP7);
-        $this->traverser = new NodeTraverser();
-        $this->visitor = new ParentConnectingVisitor();
-        $this->traverser->addVisitor($this->visitor);
-    }
-
-    protected function tearDown(): void
-    {
-        parent::tearDown();
-        unset($this->parser);
-        unset($this->traverser);
-        unset($this->visitor);
-    }
-
 
     /**
      * @dataProvider requireDataProvider
@@ -46,7 +28,6 @@ class IncludeResolvingVisitorTest extends TestCase
         $includes = $visitor->getIncludes();
 
         $this->assertEquals($expected, $includes[0]->getAttribute(IncludeResolvingVisitor::RESOLVED_INCLUDE), $message);
-
     }
 
     public function requireDataProvider(): \Generator
@@ -146,10 +127,26 @@ class IncludeResolvingVisitorTest extends TestCase
         ];
 
         $in = fopen(__DIR__ . '/../fixtures/requires.csv', 'r');
-        while($row = fgetcsv($in)) {
+        while ($row = fgetcsv($in)) {
             yield [$row[0], 'require_once' . $row[1], $row[2]];
         }
         fclose($in);
+    }
+
+    protected function setUp(): void
+    {
+        $this->parser = (new ParserFactory())->create(ParserFactory::PREFER_PHP7);
+        $this->traverser = new NodeTraverser();
+        $this->visitor = new ParentConnectingVisitor();
+        $this->traverser->addVisitor($this->visitor);
+    }
+
+    protected function tearDown(): void
+    {
+        parent::tearDown();
+        unset($this->parser);
+        unset($this->traverser);
+        unset($this->visitor);
     }
 
 

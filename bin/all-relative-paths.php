@@ -1,7 +1,6 @@
 <?php
 
 use MoodleAnalyse\Codebase\ResolvedPathProcessor;
-use MoodleAnalyse\File\FileFinder;
 use MoodleAnalyse\Visitor\PathFindingVisitor;
 use MoodleAnalyse\Visitor\PathResolvingVisitor;
 use PhpParser\Lexer;
@@ -13,7 +12,7 @@ use PhpParser\ParserFactory;
 
 require_once __DIR__ . '/../vendor/autoload.php';
 
-$finder = new FileFinder(__DIR__ . '/../moodle');
+$finder = newFileFinder(__DIR__ . '/../moodle');
 
 $lexer = new Lexer(['usedAttributes' => ['startLine', 'endLine', 'startFilePos', 'endFilePos']]);
 $parser = (new ParserFactory())->create(ParserFactory::PREFER_PHP7, $lexer);

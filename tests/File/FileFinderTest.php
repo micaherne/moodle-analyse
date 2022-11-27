@@ -3,8 +3,6 @@
 namespace MoodleAnalyse\File;
 
 use PHPUnit\Framework\TestCase;
-use SebastianBergmann\FileIterator\Iterator;
-use Symfony\Component\Finder\SplFileInfo;
 
 class FileFinderTest extends TestCase
 {
@@ -36,4 +34,5 @@ class FileFinderTest extends TestCase
         $this->assertNotContains('lib' . DIRECTORY_SEPARATOR . 'pear' . DIRECTORY_SEPARATOR . 'HTML' . DIRECTORY_SEPARATOR . 'QuickForm.php', $iterator);
 
     }
+
 }

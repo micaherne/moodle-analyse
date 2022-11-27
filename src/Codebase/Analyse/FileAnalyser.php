@@ -79,6 +79,13 @@ class FileAnalyser
 
         $pathNodes = $this->pathResolvingVisitor->getPathNodes();
         foreach ($pathNodes as $pathNode) {
+
+            // Check for config.php includes (i.e. the file is some kind of entry point).
+            if ($pathNode->getAttribute(PathResolvingVisitor::RESOLVED_INCLUDE ) == '@/config.php'
+                && $pathNode->getAttribute('parent')?->getAttribute(PathResolvingVisitor::IS_CONFIG_INCLUDE)) {
+                $fileAnalysis->setIncludesConfig(true);
+            }
+
             $code = substr(
                 $contents,
                 $pathNode->getStartFilePos(),

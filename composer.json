@@ -20,6 +20,7 @@
   "require": {
     "php": "^8.1",
     "nikic/php-parser": "^v4.15",
+    "psr/log": "^3",
     "symfony/cache": "^v6.1",
     "symfony/console": "^v6.1",
     "symfony/finder": "^v6.1",

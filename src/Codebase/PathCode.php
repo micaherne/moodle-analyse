@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace MoodleAnalyse\Codebase;
 
+/**
+ * @todo Fix the naming of this class, properties and getters.
+ */
 class PathCode
 {
     private string $pathCode;
@@ -97,7 +100,15 @@ class PathCode
      */
     public function getPathComponent(): ?string
     {
-        return $this->pathComponent;
+        $pathComponent = $this->pathComponent;
+        // We have a couple of component names returned by ComponentResolver that are not known by Moodle, so we
+        // rewrite these here.
+        if ($pathComponent === 'core_lib') {
+            $pathComponent = 'core';
+        } elseif ($pathComponent === 'core_root') {
+            $pathComponent = null;
+        }
+        return $pathComponent;
     }
 
     /**

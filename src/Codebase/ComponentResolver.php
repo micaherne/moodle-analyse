@@ -18,13 +18,6 @@ class ComponentResolver
 
     protected string $componentsJsonLocation;
 
-    /**
-     * An index of the plugin type root directories.
-     *
-     * @var string[] root directory (relative) => plugin type
-     */
-    private array $pluginTypeRoots = [];
-
     // Taken from core_component.
     // TODO: We should use the parser to get this.
     protected static $ignoreddirs = [
@@ -53,20 +46,6 @@ class ComponentResolver
     }
 
     /**
-     * @return string[]
-     * @throws \Exception
-     */
-    public function getPluginTypeRoots(): array
-    {
-        // TODO: This is a bit poor - the pluginTypeRoots should be initialised somewhere else.
-        if ($this->tree === []) {
-            $this->buildTree();
-        }
-
-        return $this->pluginTypeRoots;
-    }
-
-    /**
      * Build a tree of components for resolving component.
      *
      * Also extracts any plugin type root directories found.
@@ -79,16 +58,12 @@ class ComponentResolver
 
         $this->addComponentsDataToTree($componentsJsonData);
 
-        $this->extractPluginTypeRoots($componentsJsonData);
-
         // Because lib is the root of the core component.
         $this->tree['lib'][self::SUBSYSTEM_ROOT] = null;
 
         $subpluginsJsonData = $this->getSubpluginData($componentsJsonData);
         foreach ($subpluginsJsonData as $plugin => $data) {
             $this->addComponentsDataToTree($data);
-
-            $this->extractPluginTypeRoots($data);
 
             // We now have a node for the plugin containing the subplugins, so we need to mark
             // this as a plugin root.
@@ -154,6 +129,15 @@ class ComponentResolver
 
     /**
      * Resolve the component for a path.
+     *
+     * Note that this returns two non-Moodle component names: core_lib and core_root. These are rewritten to
+     * "core" and null respectively by \MoodleAnalyse\Codebase\PathCode::getPathComponent()
+     *
+     * The core_root one is required to distinguish between a path being in dirroot and not being determined.
+     *
+     * @todo The core_lib one could do with never being emitted by this method (i.e. rewritten to "core")
+     *       and potentially a better solution for root.
+     *
      * @param string $path a relative path to a file or directory
      * @return array|null array of [type, name, path within component] or null if it can't be determined
      * @throws \Exception
@@ -357,14 +341,4 @@ class ComponentResolver
         return $data;
     }
 
-    private function extractPluginTypeRoots(object $componentsJsonData): void
-    {
-        if (!property_exists($componentsJsonData, 'plugintypes')) {
-            return;
-        }
-
-        foreach ($componentsJsonData->plugintypes as $plugintype => $dir) {
-            $this->pluginTypeRoots[$dir] = $plugintype;
-        }
-    }
 }

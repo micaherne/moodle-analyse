@@ -13,6 +13,8 @@ class FileAnalysis
     /** @var array<int, CodebasePath> */
     private array $codebasePaths = [];
 
+    private ?bool $includesConfig = null;
+
     public function __construct(private SplFileInfo $finderFile, private ?string $fileComponent)
     {
     }
@@ -49,6 +51,21 @@ class FileAnalysis
     {
         return $this->fileComponent;
     }
+
+    public function setIncludesConfig(bool $includesConfig)
+    {
+        $this->includesConfig = $includesConfig;
+    }
+
+    /**
+     * @return bool|null
+     */
+    public function getIncludesConfig(): ?bool
+    {
+        return $this->includesConfig;
+    }
+
+
 
 
 }
