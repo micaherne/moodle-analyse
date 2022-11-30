@@ -31,6 +31,7 @@ class PathResolvingVisitorTest extends TestCase
         unset($this->parser);
         unset($this->traverser);
         unset($this->parentConnectingVisitor);
+        gc_collect_cycles();
     }
 
     public function testIsMoodleInternalCheck() {
@@ -82,7 +83,7 @@ class PathResolvingVisitorTest extends TestCase
 
         $pathNodes = $this->getPathNodes($path, $require);
 
-        $this->assertEquals($expected, $pathNodes[0]->getAttribute(IncludeResolvingVisitor::RESOLVED_INCLUDE), $message);
+        $this->assertEquals($expected, $pathNodes[0]->getAttribute(PathResolvingVisitor::RESOLVED_INCLUDE), $message);
 
     }
 

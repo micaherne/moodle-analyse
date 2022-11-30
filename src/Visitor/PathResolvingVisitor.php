@@ -470,10 +470,10 @@ class PathResolvingVisitor extends NodeVisitorAbstract implements FileAwareInter
                     $currentScope->{self::GET_PLUGIN_LIST_VARS}[$parent->var->name] = self::COMPONENT_ASSIGNMENT;
                 } elseif ($parent instanceof Node\Arg) {
                     // Seems to be mostly array_keys and array_key_exists, which we don't need to care about.
-                    echo "what happens here?";
+                    echo ("what happens here? " . $this->filePath . ':' . $parent->getStartLine() . "\n");
                 } else {
                     // Can be return, e.g. get_plugin_list() in deprecatedlib.php
-                    echo "what happens here?";
+                    echo ("what happens here? " . $this->filePath . ':' . $parent->getStartLine() . "\n");
                 }
             } elseif ($node->name instanceof Node\Identifier && ($node->name->name === 'get_plugin_directory' ||
                     $node->name->name === 'get_component_directory')) {
@@ -530,7 +530,7 @@ class PathResolvingVisitor extends NodeVisitorAbstract implements FileAwareInter
                         if (array_key_exists($concatNode->left->name, $currentScope->{self::GET_PLUGIN_LIST_VARS})) {
                             // TODO: $node->var may be an ArrayDimFetch.
                             if ($node->var instanceof Node\Expr\ArrayDimFetch) {
-                                echo "ArrayDimFetch in " . $this->filePath . ': ' . $node->getStartLine() . "\n";
+                                echo "ArrayDimFetch in " . $this->filePath . ':' . $node->getStartLine() . "\n";
                             } else {
                                 $currentScope->{self::GET_PLUGIN_LIST_VARS}[$node->var->name] = self::COMPONENT_INSTANCE;
                             }
@@ -582,7 +582,7 @@ class PathResolvingVisitor extends NodeVisitorAbstract implements FileAwareInter
         } elseif ($node instanceof Node\Expr\MethodCall) {
             $args = $this->getArgValues($node);
             if (is_null($node->name)) {
-                echo "Node name is null in " . $this->filePath . ': ' . $node->getStartLine() . "\n";
+                echo "Node name is null in " . $this->filePath . ':' . $node->getStartLine() . "\n";
             }
             $this->overridePathComponent(
                 $node,
@@ -605,7 +605,9 @@ class PathResolvingVisitor extends NodeVisitorAbstract implements FileAwareInter
             } elseif ($node->dim instanceof Node\Scalar\LNumber) {
                 $dim = $node->dim->value;
             } else {
-                echo "Node name is null (2) in " . $this->filePath . ": " . $node->getStartLine() . "\n";
+                if (is_null($node->dim)) {
+                    echo "Node dim is null in " . $this->filePath . ":" . $node->getStartLine() . "\n";
+                }
                 $dim = '$' . $node->dim->name;
             }
             $this->overridePathComponent($node, '{' . $this->getPathComponentNoBraces($node->var) . '[' . $dim . ']}');
