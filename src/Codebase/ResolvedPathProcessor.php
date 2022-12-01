@@ -66,7 +66,6 @@ class ResolvedPathProcessor
      *
      * @param string $resolvedInclude
      * @param string|null $filePath the relative file path
-     * @return string
      */
     public function toCodeString(string $resolvedInclude, ?string $filePath = null): string
     {
@@ -86,7 +85,7 @@ class ResolvedPathProcessor
         // Easier to split
         if ($includeParts[0] === '@') {
             array_shift($includeParts);
-            if (count($includeParts) === 0) {
+            if ($includeParts === []) {
                 $resultParts[] = '$CFG->dirroot';
             } else {
                 switch ($includeParts[0]) {
@@ -118,7 +117,8 @@ class ResolvedPathProcessor
             if ($hasVariables) {
                 // Find the variables and extract the string before, if there is one, and then the variable content.
                 $currentPosition = 0;
-                for ($i = 0; $i < count($matches[0]); $i++) {
+                $itemsCount = count($matches[0]);
+                for ($i = 0; $i < $itemsCount; $i++) {
                     $startPosition = $matches[0][$i][1];
                     if ($startPosition > $currentPosition) {
                         $partResultParts[] = ResolvedPathProcessor::QUOTE . substr(
@@ -217,8 +217,6 @@ class ResolvedPathProcessor
      * The lookbehind is to prevent matching a slash as a parameter, specifically
      * in ltrim($observer['includefile'], '/') from \core\event\manager.
      *
-     * @param string $resolvedInclude
-     * @return array|false
      * @todo This is a bit shoddy. It would be better if the lookbehind matched everything but a closing brace,
      *       and there was a matching lookahead that matched everything but an opening one. (Update: we can't
      *       do it that way as negative lookbehinds have to be fixed length.)
@@ -229,7 +227,6 @@ class ResolvedPathProcessor
     }
 
     /**
-     * @param array|string $result
      * @return array|string|string[]
      */
     private function mergeStrings(array|string $result): string|array

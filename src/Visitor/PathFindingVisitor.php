@@ -38,12 +38,8 @@ class PathFindingVisitor extends NodeVisitorAbstract
             $this->insidePropertyDefinition = true;
         }
 
-        if ($node instanceof Node\Expr\PropertyFetch) {
-            if ($node->var instanceof Node\Expr\Variable && $node->var->name === 'CFG') {
-                if ($node->name instanceof Node\Identifier && ($node->name->name == 'dirroot' || $node->name->name === 'libdir')) {
-                    $this->findPotentialFilePath($node);
-                }
-            }
+        if ($node instanceof Node\Expr\PropertyFetch && ($node->var instanceof Node\Expr\Variable && $node->var->name === 'CFG') && ($node->name instanceof Node\Identifier && ($node->name->name == 'dirroot' || $node->name->name === 'libdir'))) {
+            $this->findPotentialFilePath($node);
         }
 
         if ($node instanceof Node\Scalar\MagicConst\Dir || $node instanceof Node\Scalar\MagicConst\File) {
@@ -126,9 +122,6 @@ class PathFindingVisitor extends NodeVisitorAbstract
         return $this->findRelevantParent($parent);
     }
 
-    /**
-     * @return array
-     */
     public function getPathNodes(): array
     {
         return $this->pathNodes;
@@ -138,7 +131,6 @@ class PathFindingVisitor extends NodeVisitorAbstract
      * Given a node like __DIR__ or $CFG->dirroot, look for a parent node like a variable assignment or function call
      * and mark the relevant node as a code path node if found.
      *
-     * @param Node $node
      */
     private function findPotentialFilePath(Node $node): void
     {
@@ -154,26 +146,16 @@ class PathFindingVisitor extends NodeVisitorAbstract
         }
     }
 
-    /**
-     * @param Node $node
-     */
     private function markAsCodePath(Node $node): void
     {
         $node->setAttribute(self::IS_CODEPATH_NODE, true);
     }
 
-    /**
-     * @param Node $function
-     * @return bool
-     */
     private function isDirnameCall(Node $function): bool
     {
         return $function instanceof Node\Expr\FuncCall && $function->name instanceof Node\Name && $function->name->parts[0] === 'dirname';
     }
 
-    /**
-     * @param Node $relevantParent
-     */
     private function markAsPropertyDefinition(Node $relevantParent): void
     {
         $relevantParent->setAttribute(self::ATTR_IN_PROPERTY_DEF, true);

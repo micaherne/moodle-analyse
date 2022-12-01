@@ -34,7 +34,7 @@ class DynamicComponentRewriter extends AbstractRewriter implements Rewriter
             }
         }
 
-        if (count($rewrites) === 0) {
+        if ($rewrites === []) {
             return false;
         }
 

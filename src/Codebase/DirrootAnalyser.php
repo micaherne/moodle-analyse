@@ -31,8 +31,6 @@ class DirrootAnalyser
     /**
      * Is the resolved include just dirroot with an optional trailing directory separator?
      *
-     * @param string $resolvedInclude
-     * @return bool
      */
     public function isDirroot(string $resolvedInclude): bool
     {
@@ -43,7 +41,6 @@ class DirrootAnalyser
     /**
      * Classify what dirroot is being used for.
      *
-     * @param Node $pathNode
      * @return array{Node, int}
      */
     public function classifyUse(Node $pathNode): array
@@ -134,17 +131,14 @@ class DirrootAnalyser
                 $methodName = '$' . $argParent->var->name . '->' . $argParent->name->toString() . '()';
                 echo "Unknown method: $methodName\n";
             } else {
-                $argParentClass = get_class($argParent);
+                $argParentClass = $argParent::class;
                 echo "Unknown argument parent: $argParentClass\n";
             }
+        } elseif (is_object($parent)) {
+            $parentClass = $parent::class;
+            echo "Unknown parent: $parentClass\n";
         } else {
-            if (is_object($parent)) {
-                $parentClass = get_class($parent);
-                echo "Unknown parent: $parentClass\n";
-            } else {
-                echo "Parent not found\n";
-            }
-
+            echo "Parent not found\n";
         }
 
         // Try and return the containing expression.

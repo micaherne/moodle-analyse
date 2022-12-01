@@ -28,25 +28,16 @@ class FileAnalysis
         return str_replace('\\', '/', $this->finderFile->getRelativePathname());
     }
 
-    /**
-     * @return array
-     */
     public function getCodebasePaths(): array
     {
         return $this->codebasePaths;
     }
 
-    /**
-     * @return SplFileInfo
-     */
     public function getFinderFile(): SplFileInfo
     {
         return $this->finderFile;
     }
 
-    /**
-     * @return string|null
-     */
     public function getFileComponent(): ?string
     {
         return $this->fileComponent;
@@ -57,9 +48,6 @@ class FileAnalysis
         $this->includesConfig = $includesConfig;
     }
 
-    /**
-     * @return bool|null
-     */
     public function getIncludesConfig(): ?bool
     {
         return $this->includesConfig;

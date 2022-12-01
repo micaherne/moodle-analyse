@@ -17,8 +17,6 @@ class RewriteApplier
      * Take a list of rewrites and apply them to the file.
      *
      * @param array<Rewrite> $rewrites
-     * @param SplFileInfo $finderFile
-     * @return void
      */
     public function applyRewrites(array $rewrites, SplFileInfo $finderFile): void
     {

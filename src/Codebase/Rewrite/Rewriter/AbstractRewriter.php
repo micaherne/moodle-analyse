@@ -17,8 +17,6 @@ class AbstractRewriter
      * Take a list of rewrites and apply them to the file.
      *
      * @param array<Rewrite> $rewrites
-     * @param SplFileInfo $finderFile
-     * @return void
      */
     protected function applyRewrites(array $rewrites, SplFileInfo $finderFile): void
     {

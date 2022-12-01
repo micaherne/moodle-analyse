@@ -32,15 +32,11 @@ class RelativeDirPathRewrite extends Rewrite
     {
         $sourceParts = explode('/', $sourceFilename);
         $targetParts = explode('/', $targetFilename);
-        while (count($sourceParts) > 0 && count($targetParts) > 0 && $sourceParts[0] === $targetParts[0]) {
+        while ($sourceParts !== [] && $targetParts !== [] && $sourceParts[0] === $targetParts[0]) {
             array_shift($targetParts);
             array_shift($sourceParts);
         }
-        if (count($sourceParts) > 0) {
-            $resultParts = array_fill(0, count($sourceParts) - 1, '..');
-        } else {
-            $resultParts = ['..'];
-        }
+        $resultParts = $sourceParts !== [] ? array_fill(0, count($sourceParts) - 1, '..') : ['..'];
         $resultParts = array_merge($resultParts, $targetParts);
         return implode('/', $resultParts);
     }

@@ -11,19 +11,13 @@ use Symfony\Component\Finder\SplFileInfo;
 class FileFinder
 {
     private const THIRDPARTYLIBS_XML = 'thirdpartylibs.xml';
-    private string $moodleroot;
 
-    /**
-     * @param string $moodleroot
-     */
-    public function __construct(string $moodleroot)
+    public function __construct(private string $moodleroot)
     {
-        $this->moodleroot = $moodleroot;
     }
 
     /**
      * @param string[] $types file extensions to return, empty means all files
-     * @param bool $includeThirdPartyLibs
      * @return Iterator<SplFileInfo>
      * @throws Exception
      */

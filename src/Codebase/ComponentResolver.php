@@ -70,7 +70,7 @@ class ComponentResolver
 
             [$type, $name] = explode('_', $plugin, 2);
             $pluginPath = explode('/', $componentsJsonData->plugintypes->{$type});
-            array_push($pluginPath, $name);
+            $pluginPath[] = $name;
             $currentNode =& $this->tree;
             foreach ($pluginPath as $nodeName) {
                 $currentNode =& $currentNode[$nodeName];
@@ -85,9 +85,6 @@ class ComponentResolver
 
     /**
      * Add the data from a components.json file to the tree.
-     *
-     * @param object $componentsJsonData
-     * @return void
      */
     private function addComponentsDataToTree(object $componentsJsonData): void
     {
@@ -156,7 +153,7 @@ class ComponentResolver
         $path = ltrim($path, '/');
 
         // If there's nothing left it's dirroot.
-        if (strlen($path) === 0) {
+        if ($path === '') {
             return ['core', 'root', ''];
         }
 
@@ -164,8 +161,6 @@ class ComponentResolver
         if (str_starts_with($path, '{')) {
             return null;
         }
-
-        $result = [];
 
         $currentNode =& $this->tree;
         // TODO: Copied from ResolvedIncludeProcessor - refactor.
@@ -199,7 +194,7 @@ class ComponentResolver
                 $pathItem = null;
 
                 // The second clause here is to deal with bare component directories, e.g. @/lib/
-                if (count($pathParts) !== 0 && !(count($pathParts) === 1 && $pathParts[0] === '')) {
+                if ($pathParts !== [] && !(count($pathParts) === 1 && $pathParts[0] === '')) {
                     continue;
                 } else {
                     // It might be just a plugin root or a subsystem directory with no path.
@@ -221,7 +216,7 @@ class ComponentResolver
                 // quizaccess.
                 // Note that we need the starts and ends with calls here to avoid dynamic filenames being rejected,
                 // e.g. @/mod/scorm/datamodels/{$scorm->version}lib.php
-                if (count($pathParts) > 0 && str_starts_with($pathParts[0], '{') && str_ends_with($pathParts[0], '}')) {
+                if ($pathParts !== [] && str_starts_with($pathParts[0], '{') && str_ends_with($pathParts[0], '}')) {
                     foreach ($currentNode as $dirname => $values) {
                         if ($dirname === self::PLUGIN_ROOT || $dirname === self::PLUGIN_TYPE_ROOT) {
                             continue;
@@ -242,11 +237,9 @@ class ComponentResolver
                     // We use a variable name heuristic here, which may not be 100% accurate but it appears to work
                     // surprisingly well with the core codebase. It's basically "is it a simple variable name and does
                     // it not contain the word 'file'".
-                    if (count($pathParts) === 0 && str_starts_with($pathItem, '{')) {
-                        if (preg_match('/^\{\\$[a-z0-9]+}$/', $pathItem)) {
-                            if (str_contains($pathItem, 'file') || str_contains($pathItem, 'path')) {
-                                return null;
-                            }
+                    if ($pathParts === [] && str_starts_with($pathItem, '{')) {
+                        if (preg_match('/^\{\\$[a-z0-9]+}$/', $pathItem) && (str_contains($pathItem, 'file') || str_contains($pathItem, 'path'))) {
+                            return null;
                         }
                         return [$pluginType, $pathItem, ''];
                     }
@@ -271,16 +264,14 @@ class ComponentResolver
             return ['core', 'root', $path];
         }
 
-        return $result;
+        return [];
     }
 
     /**
      * Add a component to the tree.
      *
      * @param string $component the component
-     * @param string $componentDirectory
      * @param string $type the type of component, PLUGIN_ROOT, PLUGIN_TYPE_ROOT or SUBSYSTEM_ROOT
-     * @return void
      */
     private function addComponentToTree(string $component, string $componentDirectory, string $type): void
     {
@@ -304,7 +295,6 @@ class ComponentResolver
      *
      * @param string $pluginType
      * @param string $pluginName
-     * @return bool
      */
     public function isValidPluginName(string $pluginType, string $pluginName): bool
     {
@@ -325,7 +315,6 @@ class ComponentResolver
     }
 
     /**
-     * @return object
      * @throws \Exception
      */
     private function getCoreComponentsData(): object

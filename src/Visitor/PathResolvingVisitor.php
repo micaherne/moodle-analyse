@@ -144,10 +144,8 @@ class PathResolvingVisitor extends NodeVisitorAbstract implements FileAwareInter
             }
         }
 
-        if ($node instanceof Node\Expr\PropertyFetch) {
-            if ($node->var instanceof Node\Expr\Variable && $node->var->name === 'CFG') {
-                $currentScope->{self::CFG_USED} = true;
-            }
+        if ($node instanceof Node\Expr\PropertyFetch && ($node->var instanceof Node\Expr\Variable && $node->var->name === 'CFG')) {
+            $currentScope->{self::CFG_USED} = true;
         }
 
         $this->checkForCoreComponentCalls($node);
@@ -347,10 +345,6 @@ class PathResolvingVisitor extends NodeVisitorAbstract implements FileAwareInter
         return $node->getAttribute(self::INCLUDE_CONTRIBUTION);
     }
 
-    /**
-     * @param Node $node
-     * @return string|null
-     */
     private function getPathComponentNoBraces(Node $node): ?string
     {
         $component = $this->getPathComponent($node);
@@ -390,8 +384,6 @@ class PathResolvingVisitor extends NodeVisitorAbstract implements FileAwareInter
      * The lib/pear directory is added to the include_path in setup.php, so some things that appear to be
      * relative paths are actually not.
      *
-     * @param string $path
-     * @return string
      */
     private function fixPearLibraries(string $path): string
     {
@@ -421,10 +413,6 @@ class PathResolvingVisitor extends NodeVisitorAbstract implements FileAwareInter
         $this->filePath = $filePath;
     }
 
-    /**
-     * @param Node $node
-     * @return bool
-     */
     private function isPathNode(Node $node): bool
     {
         return $node->hasAttribute(PathFindingVisitor::IS_CODEPATH_NODE)
@@ -433,7 +421,6 @@ class PathResolvingVisitor extends NodeVisitorAbstract implements FileAwareInter
 
     /**
      * @param Node\Expr\FuncCall|Node $node
-     * @return array
      */
     private function getArgValues(Node\Expr\FuncCall|Node $node): array
     {
@@ -450,7 +437,6 @@ class PathResolvingVisitor extends NodeVisitorAbstract implements FileAwareInter
 
     /**
      * Look for calls to core_component::get_plugin_list
-     * @param Node $node
      */
     private function checkForCoreComponentCalls(Node $node): void
     {
@@ -499,19 +485,15 @@ class PathResolvingVisitor extends NodeVisitorAbstract implements FileAwareInter
         $currentScope = $this->scopeStack->top();
         if ($currentScope->{self::CORE_COMPONENT_CALLED}) {
             if ($node instanceof Node\Stmt\Foreach_) {
-                if ($node->expr instanceof Node\Expr\Variable) {
-                    if (array_key_exists($node->expr->name, $currentScope->{self::GET_PLUGIN_LIST_VARS})) {
-                        $currentScope->{self::GET_PLUGIN_LIST_VARS}[$node->valueVar->name] = self::COMPONENT_ITERATOR;
-                    }
+                if ($node->expr instanceof Node\Expr\Variable && array_key_exists($node->expr->name, $currentScope->{self::GET_PLUGIN_LIST_VARS})) {
+                    $currentScope->{self::GET_PLUGIN_LIST_VARS}[$node->valueVar->name] = self::COMPONENT_ITERATOR;
                 }
             } elseif ($node instanceof Node\Expr\ArrayDimFetch) {
-                if ($node->var instanceof Node\Expr\Variable) {
-                    if (array_key_exists($node->var->name, $currentScope->{self::GET_PLUGIN_LIST_VARS})) {
-                        if ($node->dim instanceof Node\Scalar\String_) {
-                            $currentScope->{self::GET_PLUGIN_LIST_VARS}[$node->var->name . '[\'' . $node->dim->value . '\']'] = self::COMPONENT_INSTANCE;
-                        } elseif ($node->dim instanceof Node\Expr\Variable) {
-                            $currentScope->{self::GET_PLUGIN_LIST_VARS}[$node->var->name . '[$' . $node->dim->name . ']'] = self::COMPONENT_INSTANCE;
-                        }
+                if ($node->var instanceof Node\Expr\Variable && array_key_exists($node->var->name, $currentScope->{self::GET_PLUGIN_LIST_VARS})) {
+                    if ($node->dim instanceof Node\Scalar\String_) {
+                        $currentScope->{self::GET_PLUGIN_LIST_VARS}[$node->var->name . '[\'' . $node->dim->value . '\']'] = self::COMPONENT_INSTANCE;
+                    } elseif ($node->dim instanceof Node\Expr\Variable) {
+                        $currentScope->{self::GET_PLUGIN_LIST_VARS}[$node->var->name . '[$' . $node->dim->name . ']'] = self::COMPONENT_INSTANCE;
                     }
                 }
             } elseif ($node instanceof Node\Expr\Assign) {
@@ -526,33 +508,26 @@ class PathResolvingVisitor extends NodeVisitorAbstract implements FileAwareInter
                     while ($concatNode->left instanceof Node\Expr\BinaryOp\Concat) {
                         $concatNode = $concatNode->left;
                     }
-                    if ($concatNode->left instanceof Node\Expr\Variable) {
-                        if (array_key_exists($concatNode->left->name, $currentScope->{self::GET_PLUGIN_LIST_VARS})) {
-                            // TODO: $node->var may be an ArrayDimFetch.
-                            if ($node->var instanceof Node\Expr\ArrayDimFetch) {
-                                echo "ArrayDimFetch in " . $this->filePath . ':' . $node->getStartLine() . "\n";
-                            } else {
-                                $currentScope->{self::GET_PLUGIN_LIST_VARS}[$node->var->name] = self::COMPONENT_INSTANCE;
-                            }
+                    if ($concatNode->left instanceof Node\Expr\Variable && array_key_exists($concatNode->left->name, $currentScope->{self::GET_PLUGIN_LIST_VARS})) {
+                        // TODO: $node->var may be an ArrayDimFetch.
+                        if ($node->var instanceof Node\Expr\ArrayDimFetch) {
+                            echo "ArrayDimFetch in " . $this->filePath . ':' . $node->getStartLine() . "\n";
+                        } else {
+                            $currentScope->{self::GET_PLUGIN_LIST_VARS}[$node->var->name] = self::COMPONENT_INSTANCE;
                         }
                     }
                 } elseif ($node->expr instanceof Node\Scalar\Encapsed) {
-                    if ($node->expr->parts[0] instanceof Node\Expr\Variable) {
-                        if (array_key_exists(
-                            $node->expr->parts[0]->name,
-                            $currentScope->{self::GET_PLUGIN_LIST_VARS}
-                        )) {
-                            $currentScope->{self::GET_PLUGIN_LIST_VARS}[$node->var->name] = self::COMPONENT_INSTANCE;
-                        }
+                    if ($node->expr->parts[0] instanceof Node\Expr\Variable && array_key_exists(
+                        $node->expr->parts[0]->name,
+                        $currentScope->{self::GET_PLUGIN_LIST_VARS}
+                    )) {
+                        $currentScope->{self::GET_PLUGIN_LIST_VARS}[$node->var->name] = self::COMPONENT_INSTANCE;
                     }
                 }
             }
         }
     }
 
-    /**
-     * @param mixed $node
-     */
     private function overridePathComponents(mixed $node): void
     {
         if ($node instanceof Node\Expr\FuncCall) {
@@ -618,11 +593,9 @@ class PathResolvingVisitor extends NodeVisitorAbstract implements FileAwareInter
                     $node,
                     '{' . $this->getPathComponentNoBraces($node->var) . '->' . $node->name->name . '}'
                 );
-            } else {
-                if (!in_array($node->name->name, ['dirroot', 'libdir', 'admin'])) {
-                    // Deal with things like $CFG->moodlepageclassfile
-                    $this->overridePathComponent($node, '{$CFG->' . $node->name->name . '}');
-                }
+            } elseif (!in_array($node->name->name, ['dirroot', 'libdir', 'admin'])) {
+                // Deal with things like $CFG->moodlepageclassfile
+                $this->overridePathComponent($node, '{$CFG->' . $node->name->name . '}');
             }
         } elseif ($node instanceof Node\Expr\ClassConstFetch) {
             if ($node->class instanceof Node\Name && $node->name instanceof Node\Identifier) {
@@ -635,10 +608,6 @@ class PathResolvingVisitor extends NodeVisitorAbstract implements FileAwareInter
         }
     }
 
-    /**
-     * @param Node $node
-     * @return bool
-     */
     private function isMoodleInternalCheck(Node $node): bool
     {
         // Exit_ is near the start to short circuit as much as possible.
@@ -654,9 +623,6 @@ class PathResolvingVisitor extends NodeVisitorAbstract implements FileAwareInter
             && $node->left->args[0]->value->value == 'MOODLE_INTERNAL';
     }
 
-    /**
-     * @return bool
-     */
     private function inMainScope(): bool
     {
         return $this->scopeStack->count() === 1;

@@ -72,7 +72,6 @@ class ComponentsFinder
     /**
      * @param mixed $pathWithSubPlugins
      * @param $moodleDirectory
-     * @return \Generator
      */
     public function getSubplugins(string $pathWithSubPlugins, string $moodleDirectory): \Generator
     {

@@ -33,7 +33,7 @@ class SimplePathsFromCoreToNonCoreRewriter extends AbstractRewriter implements R
             }
             $rewrites[] = new GetComponentPathRewrite($codebasePath->getPathCode());
         }
-        if (count($rewrites) === 0) {
+        if ($rewrites === []) {
             return false;
         }
 

@@ -19,6 +19,10 @@ use Symfony\Component\Finder\SplFileInfo;
 class PluginExtractor
 {
 
+    /**
+     * @var \MoodleAnalyse\Codebase\Rewrite\RewriteApplier|mixed
+     */
+    public $rewriteApplier;
     public function __construct(private LoggerInterface $logger = new NullLogger()) {
         $this->rewriteApplier = new RewriteApplier($this->logger);
     }
@@ -90,7 +94,7 @@ class PluginExtractor
                 }
             }
 
-            if (count($rewrites) === 0) {
+            if ($rewrites === []) {
                 $this->logger->debug("Nothing to apply");
                 continue;
             } else {
