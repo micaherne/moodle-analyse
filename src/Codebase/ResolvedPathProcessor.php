@@ -26,7 +26,7 @@ class ResolvedPathProcessor
 
     public function categorise(string $resolvedPath): ?PathCategory
     {
-        if (preg_match('#^@[/\\\\]?$#', $resolvedPath)) {
+        if (preg_match('#^@([/\\\\]|\{\\\\DIRECTORY_SEPARATOR})?$#', $resolvedPath)) {
             return PathCategory::DirRoot;
         } elseif ($resolvedPath === '@/config.php') {
             return PathCategory::Config;

@@ -581,9 +581,11 @@ class PathResolvingVisitor extends NodeVisitorAbstract implements FileAwareInter
                 $dim = $node->dim->value;
             } else {
                 if (is_null($node->dim)) {
-                    echo "Node dim is null in " . $this->filePath . ":" . $node->getStartLine() . "\n";
+                    $dim = '';
+                } else {
+                    $dim = '$' . $node->dim->name;
                 }
-                $dim = '$' . $node->dim->name;
+
             }
             $this->overridePathComponent($node, '{' . $this->getPathComponentNoBraces($node->var) . '[' . $dim . ']}');
         } elseif ($node instanceof Node\Expr\PropertyFetch) {

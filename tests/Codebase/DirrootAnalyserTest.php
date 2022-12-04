@@ -2,10 +2,10 @@
 
 namespace MoodleAnalyse\Codebase;
 
+use Generator;
 use MoodleAnalyse\Visitor\PathFindingVisitor;
 use MoodleAnalyse\Visitor\PathResolvingVisitor;
 use PhpParser\Lexer;
-use PhpParser\Node;
 use PhpParser\NodeTraverser;
 use PhpParser\NodeVisitor\NameResolver;
 use PhpParser\NodeVisitor\ParentConnectingVisitor;
@@ -15,7 +15,7 @@ use PHPUnit\Framework\TestCase;
 class DirrootAnalyserTest extends TestCase
 {
 
-    public function testIsDirroot()
+    public function testIsDirroot(): void
     {
         $analyser = new DirrootAnalyser();
         foreach (['@', '@/', '@\\', '@{DIRECTORY_SEPARATOR}', '@{\\DIRECTORY_SEPARATOR}'] as $dirroot) {
@@ -26,7 +26,7 @@ class DirrootAnalyserTest extends TestCase
     /**
      * @dataProvider classifyUseData
      */
-    public function testClassifyUse(string $code, int $expected)
+    public function testClassifyUse(string $code, int $expected): void
     {
         $analyser = new DirrootAnalyser();
 
@@ -48,7 +48,7 @@ class DirrootAnalyserTest extends TestCase
         $code = '<?php ' . $code . ';';
         $nodes = $parser->parse($code);
         $nodes = $traverser1->traverse($nodes);
-        $nodes = $traverser2->traverse($nodes);
+        $traverser2->traverse($nodes);
 
         $pathNodes = $pathResolvingVisitor->getPathNodes();
         $this->assertCount(1, $pathNodes);
@@ -59,7 +59,7 @@ class DirrootAnalyserTest extends TestCase
         $this->assertEquals($expected, $result[1]);
     }
 
-    public function classifyUseData()
+    public function classifyUseData(): Generator
     {
         yield [
             'if (strpos($record[\'packagefilepath\'], $CFG->dirroot) !== 0) { }',

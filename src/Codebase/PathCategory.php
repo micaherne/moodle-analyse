@@ -6,7 +6,7 @@ namespace MoodleAnalyse\Codebase;
 
 enum PathCategory
 {
-    /** The Moodle root, with or without a leading slash or PATH_SEPARATOR */
+    /** The Moodle root, with or without a leading slash or DIRECTORY_SEPARATOR */
     case DirRoot;
 
     /** config.php in the Moodle root */

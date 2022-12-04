@@ -4,7 +4,7 @@ namespace MoodleAnalyse\Codebase;
 
 use PHPUnit\Framework\TestCase;
 
-class ResolvedIncludeProcessorTest extends TestCase
+class ResolvedPathProcessorTest extends TestCase
 {
 
     /**
@@ -24,14 +24,14 @@ class ResolvedIncludeProcessorTest extends TestCase
      * @param string $resolvedInclude
      * @param string $expectedOutput
      */
-    public function testToCodeString(string $resolvedInclude, string $expectedOutput)
+    public function testToCodeString(string $resolvedInclude, string $expectedOutput): void
     {
         $processor = new ResolvedPathProcessor();
         $output = $processor->toCodeString($resolvedInclude);
         $this->assertEquals($expectedOutput, $output);
     }
 
-    public function testToCodeStringConfig()
+    public function testToCodeStringConfig(): void
     {
         $processor = new ResolvedPathProcessor();
         $this->assertEquals('__DIR__ . \'/../../config.php\'',
@@ -46,7 +46,7 @@ class ResolvedIncludeProcessorTest extends TestCase
     /**
      * @dataProvider splitResolvedIncludeData
      */
-    public function testSplitResolvedInclude(string $resolvedInclude, array|false $expected)
+    public function testSplitResolvedInclude(string $resolvedInclude, array|false $expected): void
     {
         $processor = new ResolvedPathProcessor();
         $method = (new \ReflectionClass($processor))
@@ -55,7 +55,7 @@ class ResolvedIncludeProcessorTest extends TestCase
         $this->assertEquals($expected, $method->invoke($processor, $resolvedInclude));
     }
 
-    public function testToCoreCodebasePathCall()
+    public function testToCoreCodebasePathCall(): void
     {
         $processor = new ResolvedPathProcessor();
         $this->assertEquals('$CFG->dirroot', $processor->toCoreCodebasePathCall('@'));
@@ -66,9 +66,10 @@ class ResolvedIncludeProcessorTest extends TestCase
     }
 
 
-    public function categoriseTestData()
+    public function categoriseTestData(): \Generator
     {
 
+        yield ['@{\DIRECTORY_SEPARATOR}', PathCategory::DirRoot];
         yield ['@', PathCategory::DirRoot];
         yield ['@/', PathCategory::DirRoot];
         yield ['@\\', PathCategory::DirRoot];
@@ -87,7 +88,7 @@ class ResolvedIncludeProcessorTest extends TestCase
         yield ['@/completion/criteria/{$object}.php', PathCategory::FilenameSubstitution];
     }
 
-    public function toCodeStringTestData()
+    public function toCodeStringTestData(): \Generator
     {
         yield ['@\\', '$CFG->dirroot . \'\\\''];
         yield ['@/{ltrim($observer[\'includefile\'], \'/\')}', '$CFG->dirroot . \'/\' . ltrim($observer[\'includefile\'], \'/\')'];
@@ -107,7 +108,7 @@ class ResolvedIncludeProcessorTest extends TestCase
         yield ['somedirectory/block_{$blockname}.php', '\'somedirectory/block_\' . $blockname . \'.php\''];
     }
 
-    public function splitResolvedIncludeData()
+    public function splitResolvedIncludeData(): \Generator
     {
         yield ['@/lib/moodlelib.php', ['@', 'lib', 'moodlelib.php']];
         yield ['@/{ltrim($observer[\'includefile\'], \'/\')}', ['@', '{ltrim($observer[\'includefile\'], \'/\')}']];
