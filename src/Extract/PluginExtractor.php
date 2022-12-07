@@ -7,6 +7,7 @@ use MoodleAnalyse\Codebase\Component\ComponentsFinder;
 use MoodleAnalyse\Codebase\ComponentResolver;
 use MoodleAnalyse\Codebase\PathCategory;
 use MoodleAnalyse\Codebase\Rewrite\RewriteApplier;
+use MoodleAnalyse\PluginExtractionNotSupported;
 use MoodleAnalyse\Rewrite\GetComponentPathRewrite;
 use MoodleAnalyse\Rewrite\RelativeDirPathRewrite;
 use Psr\Log\LoggerInterface;
@@ -27,7 +28,14 @@ class PluginExtractor
         $this->rewriteApplier = new RewriteApplier($this->logger);
     }
 
-    public function extractPlugin(string $moodleDirectory, string $componentName, string $outputDirectory)
+    /**
+     * @param string $moodleDirectory
+     * @param string $componentName
+     * @param string $outputDirectory
+     * @return void
+     * @throws \Exception
+     */
+    public function extractPlugin(string $moodleDirectory, string $componentName, string $outputDirectory): void
     {
         $componentsFinder = new ComponentsFinder();
         $componentPath = null;
@@ -38,7 +46,7 @@ class PluginExtractor
             }
         }
         if (is_null($componentPath)) {
-            throw new RuntimeException("Component path for $componentName not found");
+            throw new PluginExtractionNotSupported("Component path for $componentName not found");
         }
 
         $componentPathFull = $moodleDirectory . '/' . $componentPath;
@@ -90,7 +98,10 @@ class PluginExtractor
                     $rewrites[] = $rewrite;
                     $this->logger->info("Rewriting $code to " . $rewrite->getCode());
                 } else {
-                    $this->logger->alert("Non simple file found: $code");
+                    if (str_starts_with($code, '\core_component::get_component_path(')) {
+                        continue;
+                    }
+                    throw new PluginExtractionNotSupported("Non simple file found: $code");
                 }
             }
 

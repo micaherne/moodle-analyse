@@ -52,7 +52,7 @@ class ComponentResolver
      *
      * @throws \Exception
      */
-    private function buildTree()
+    private function buildTree(): void
     {
         $componentsJsonData = $this->getCoreComponentsData();
 

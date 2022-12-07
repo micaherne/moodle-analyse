@@ -36,6 +36,6 @@ enum PathCategory
     /** A file path with a simple variable substitution in it */
     case SimpleDynamicFile;
 
-    /** A well-defined path with a filename substitution only (e.g.  */
+    /** A well-defined path with a filename substitution only (e.g. @/mod/scorm/datamodels/{$scorm->version}.js) */
     case FilenameSubstitution;
 }

@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace MoodleAnalyse\Console;
 
+use MoodleAnalyse\Console\Command\Speculative\ExtractAllPlugins;
 use MoodleAnalyse\Console\Command\Speculative\ExtractPlugin;
+use MoodleAnalyse\Console\Command\Speculative\RewriteForPluginExtraction;
 
 class Application extends \Symfony\Component\Console\Application
 {
@@ -20,6 +22,8 @@ class Application extends \Symfony\Component\Console\Application
         $commands[] = new Command\RewriteCommand();
         $commands[] = new Command\Speculative\ExtractablePlugins();
         $commands[] = new ExtractPlugin();
+        $commands[] = new RewriteForPluginExtraction();
+        $commands[] = new ExtractAllPlugins();
         return $commands;
     }
 
