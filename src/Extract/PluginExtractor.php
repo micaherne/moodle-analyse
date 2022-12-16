@@ -24,7 +24,9 @@ class PluginExtractor
      * @var \MoodleAnalyse\Codebase\Rewrite\RewriteApplier|mixed
      */
     public $rewriteApplier;
-    public function __construct(private LoggerInterface $logger = new NullLogger()) {
+
+    public function __construct(private LoggerInterface $logger = new NullLogger())
+    {
         $this->rewriteApplier = new RewriteApplier($this->logger);
     }
 
@@ -83,7 +85,9 @@ class PluginExtractor
             foreach ($analysis->getCodebasePaths() as $codebasePath) {
                 $code = $codebasePath->getPathCode()->getPathCode();
                 if ($codebasePath->getPathCategory() === PathCategory::SimpleFile) {
-                    $resolvedComponent = $componentResolver->resolveComponent($codebasePath->getPathCode()->getResolvedPath());
+                    $resolvedComponent = $componentResolver->resolveComponent(
+                        $codebasePath->getPathCode()->getResolvedPath()
+                    );
                     if (is_null($resolvedComponent)) {
                         $this->logger->warning("Can't resolve component for $code");
                         continue;
@@ -97,6 +101,12 @@ class PluginExtractor
                     $rewrite = new GetComponentPathRewrite($codebasePath->getPathCode());
                     $rewrites[] = $rewrite;
                     $this->logger->info("Rewriting $code to " . $rewrite->getCode());
+                } elseif ($codebasePath->getFileComponent() === $codebasePath->getPathCode()->getPathComponent()) {
+                    if (str_starts_with($code, '__DIR__')) {
+                        // No need to do anything as it's a __DIR__ path to the same component.
+                        continue;
+                    }
+                    $rewrites[] = new RelativeDirPathRewrite($codebasePath, $componentPath);
                 } else {
                     if (str_starts_with($code, '\core_component::get_component_path(')) {
                         continue;
@@ -112,7 +122,6 @@ class PluginExtractor
                 $this->logger->debug("Applying rewrites");
                 $this->rewriteApplier->applyRewrites($rewrites, $file);
             }
-
         }
     }
 
