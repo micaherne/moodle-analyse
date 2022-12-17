@@ -7,12 +7,12 @@ use MoodleAnalyse\Codebase\Component\ComponentsFinder;
 use MoodleAnalyse\Codebase\ComponentResolver;
 use MoodleAnalyse\Codebase\PathCategory;
 use MoodleAnalyse\Codebase\Rewrite\RewriteApplier;
+use MoodleAnalyse\Codebase\ThirdPartyLibsReader;
 use MoodleAnalyse\PluginExtractionNotSupported;
 use MoodleAnalyse\Rewrite\GetComponentPathRewrite;
 use MoodleAnalyse\Rewrite\RelativeDirPathRewrite;
 use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
-use RuntimeException;
 use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Finder\Finder;
 use Symfony\Component\Finder\SplFileInfo;
@@ -55,6 +55,7 @@ class PluginExtractor
 
         $fs = new Filesystem();
 
+        // Remove subplugin directories.
         $fs->mirror($componentPathFull, $outputDirectory);
         foreach (
             $componentsFinder->getSubplugins(
@@ -67,6 +68,13 @@ class PluginExtractor
 
         $finder = new Finder();
         $finder->in($outputDirectory)->name('*.php')->files();
+
+        // Exclude third party libs.
+        $thirdPartyLibsReader = new ThirdPartyLibsReader();
+        $thirdPartyLibLocations = $thirdPartyLibsReader->getLocationsRelative($outputDirectory);
+
+        $finder->exclude($thirdPartyLibLocations['dirs']);
+        $finder->notPath($thirdPartyLibLocations['files']);
 
         $componentResolver = new ComponentResolver($moodleDirectory);
         $fileAnalyser = new FileAnalyser($componentResolver);
@@ -101,12 +109,9 @@ class PluginExtractor
                     $rewrite = new GetComponentPathRewrite($codebasePath->getPathCode());
                     $rewrites[] = $rewrite;
                     $this->logger->info("Rewriting $code to " . $rewrite->getCode());
-                } elseif ($codebasePath->getFileComponent() === $codebasePath->getPathCode()->getPathComponent()) {
-                    if (str_starts_with($code, '__DIR__')) {
-                        // No need to do anything as it's a __DIR__ path to the same component.
-                        continue;
-                    }
-                    $rewrites[] = new RelativeDirPathRewrite($codebasePath, $componentPath);
+                } elseif (str_starts_with($code, '__DIR__') && $codebasePath->getFileComponent() === $codebasePath->getPathCode()->getPathComponent()) {
+                    // Nothing to do - it's a __DIR__ link to the same component.
+                    continue;
                 } else {
                     if (str_starts_with($code, '\core_component::get_component_path(')) {
                         continue;
