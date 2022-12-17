@@ -68,8 +68,8 @@ class ExtractAllPlugins extends \Symfony\Component\Console\Command\Command
                 continue;
             }
 
-            // Cache stores can be loaded before core_component is available (maybe?)
-            if (str_starts_with($component, 'cachestore_')) {
+            // Cache stores / locks can be loaded before core_component is available (maybe?)
+            if (str_starts_with($component, 'cachestore_') || str_starts_with($component, 'cachelock_')) {
                 continue;
             }
 

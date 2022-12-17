@@ -66,6 +66,30 @@ class flat_directory_component_loader {
     }
 
     /**
+     * Get the component path.
+     *
+     * Note that this is only used when core_component is loaded but not initialised (e.g. theme/image.php)
+     * and must be fast!
+     *
+     * If the component loader is managing the component it should return the path without checking whether
+     * it exists. Otherwise, null should be returned.
+     *
+     * @param string $component
+     * @param string $relativepath
+     * @return string|null
+     */
+    public function get_component_path(string $component, string $relativepath): ?string {
+        if (!is_dir($this->pluginsdir . '/' . $component)) {
+            return null;
+        }
+        if ($relativepath === '') {
+            return $this->pluginsdir . '/' . $component;
+        }
+
+        return $this->pluginsdir . '/' . $component . '/' . ltrim($relativepath, '/');
+    }
+
+    /**
      * Build a tree of paths.
      *
      * @todo This is really slow and should be optimised or cached.
