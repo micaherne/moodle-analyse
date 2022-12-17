@@ -3,6 +3,7 @@
 namespace MoodleAnalyse\Visitor;
 
 use PhpParser\NodeTraverser;
+use PhpParser\NodeVisitor;
 use PhpParser\ParserFactory;
 use PHPUnit\Framework\TestCase;
 
@@ -10,6 +11,7 @@ class CliScriptFindingVisitorTest extends TestCase
 {
     private \PhpParser\Parser $parser;
     private NodeTraverser $traverser;
+    private NodeVisitor $visitor;
 
     protected function setUp(): void
     {
