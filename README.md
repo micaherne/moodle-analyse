@@ -3,6 +3,8 @@ Moodle Analyse
 
 This is a project to use PhpParser to analyse the Moodle codebase (PHP only), particularly for internal links within the codebase.
 
+This can be used to create a Moodle installation with plugins loaded from outside of dirroot - see the [documentation page](docs/moodle-external-plugins.md) for more details.
+
 Background
 ---
 It could be argued that the current Moodle codebase is a "legacy" codebase in the sense that it does not make use of many standard modern programming methods and patterns (e.g. https://www.packtpub.com/product/modernizing-legacy-applications-in-php/9781787124707).
@@ -21,3 +23,4 @@ Introduction
 The main components in this library are the PathFindingVisitor and PathResolvingVisitor which can be used with [PHP Parser](https://github.com/nikic/PHP-Parser) to identify intra-codebase paths and parse them into a simple form (e.g. @/mod/assign/index.php, or @/enrol/{$plugin}/lib.php) which can be used for rewriting.
 
 (Note: the PathResolvingVisitor is a fairly chaotic piece of code - I wrote it a long time ago during covid lockdown and can barely remember how it works but it has a large test suite :) )
+
