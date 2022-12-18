@@ -26,7 +26,7 @@ Create a config file with a plugin loader
 ---
 * Create a config.php file with the correct settings for Moodle. (The plugin loader has to be available before setup.php is called so currently the only place to do this is in config.php, and running install.php isn't yet supported - see later)
 * Create a directory to hold your plugins.
-* Optionally grab resources/flat_directory_component_loader.php from this library and put it somewhere near your Moodle code.
+* Optionally grab [flat_directory_component_loader.php](../resources/moodle/flat_directory_component_loader.php) from this library and put it somewhere near your Moodle code.
 * Add the following code to your config.php
 
       require_once '/some/path/flat_directory_component_loader.php';
@@ -51,7 +51,7 @@ Notes
 ---
 * This currently only supports externalising plugins which have no scripts that are intended to be directly run through either the web or the command line. This is because these have to load config.php which is no longer in the same place relative to the file. We _could_ rewrite these to absolute paths but this would be a bad solution as the code would not be in any way portable. It would be much preferable to introduce front controllers (for web and CLI) and generate controller classes / functions for these scripts.
 * A front controller would also be essential for supporting things like Javascript source maps where a URL to the source map is required but this is not possible if the plugin providing the source map is outside of the server web root.
-* Use of front controllers would also enable the component loader classes to be configured and initialised completely outside of Moodle.
+* Use of front controllers would also enable the component loader classes to be configured and initialised completely outside of Moodle. (This is why the install.php scripts are not yet supported as the component loader currently has to be initialised in config.php so would not be used during the install process which generates the config.php file)
 * There is not currently a way to install a third party plugin externally, although it shouldn't be difficult to adapt the existing code to provide a command to rewrite these.
 * This is purely a proof-of-concept and not recommended to be used in production.
 * There are still various places in the Moodle code that won't work correctly with this setup. We can get a comprehensive (I think) list of these by running `bin/moodle-analyse find-codebase-paths "/path/to/a/plain/moodle/codebase" paths.csv` and filtering the CSV to category of DirRoot or no category. These would need to be manually investigated and fixed but dirroot wrangling seems to be mainly for these cases:
