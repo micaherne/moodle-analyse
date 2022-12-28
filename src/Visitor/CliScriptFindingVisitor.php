@@ -37,7 +37,7 @@ class CliScriptFindingVisitor extends NodeVisitorAbstract
             return;
         }
 
-        if ($node->expr->name->toString() !== 'define') {
+        if ($node->expr->name instanceof Node\Name && $node->expr->name->toString() !== 'define') {
             return;
         }
 
