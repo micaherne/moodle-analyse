@@ -14,7 +14,7 @@ class FileFinder
 {
     private const THIRDPARTYLIBS_XML = 'thirdpartylibs.xml';
 
-    public function __construct(private string $moodleroot)
+    public function __construct(protected string $moodleroot)
     {
     }
 
@@ -41,7 +41,7 @@ class FileFinder
      * @return array<array<int, string>>
      * @throws Exception
      */
-    private function getThirdPartyLibLocations(): array
+    protected function getThirdPartyLibLocations(): array
     {
 
         $componentsFinder = new ComponentsFinder();
