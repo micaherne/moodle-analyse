@@ -125,7 +125,7 @@ class PathResolvingVisitor extends NodeVisitorAbstract implements FileAwareInter
             $this->addScope();
         }
 
-        if ($this->isMoodleInternalCheck($node)) {
+        if (Util::isMoodleInternalCheck($node)) {
             $this->hasMoodleInternalCheck = true;
         }
 
@@ -608,21 +608,6 @@ class PathResolvingVisitor extends NodeVisitorAbstract implements FileAwareInter
                 );
             }
         }
-    }
-
-    private function isMoodleInternalCheck(Node $node): bool
-    {
-        // Exit_ is near the start to short circuit as much as possible.
-        return
-            ($node instanceof Node\Expr\BinaryOp\BooleanOr
-                || $node instanceof Node\Expr\BinaryOp\LogicalOr)
-            && $node->right instanceof Node\Expr\Exit_
-            && $node->left instanceof Node\Expr\FuncCall
-            && $node->left->name instanceof Node\Name
-            && $node->left->name->parts[0] == 'defined'
-            && $node->left->args[0] instanceof Node\Arg
-            && $node->left->args[0]->value instanceof Node\Scalar\String_
-            && $node->left->args[0]->value->value == 'MOODLE_INTERNAL';
     }
 
     private function inMainScope(): bool
