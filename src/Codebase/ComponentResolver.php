@@ -38,7 +38,7 @@ class ComponentResolver
     // Also from core_component.
     protected static $supportsubplugins = ['mod', 'editor', 'tool', 'local'];
 
-    private array $tree = [];
+    protected array $tree = [];
 
     public function __construct(private string $moodleroot)
     {
@@ -52,7 +52,7 @@ class ComponentResolver
      *
      * @throws \Exception
      */
-    private function buildTree(): void
+    protected function buildTree(): void
     {
         $componentsJsonData = $this->getCoreComponentsData();
 
@@ -86,7 +86,7 @@ class ComponentResolver
     /**
      * Add the data from a components.json file to the tree.
      */
-    private function addComponentsDataToTree(object $componentsJsonData): void
+    protected function addComponentsDataToTree(object $componentsJsonData): void
     {
         foreach (['plugintypes' => self::PLUGIN_TYPE_ROOT, 'subsystems' => self::SUBSYSTEM_ROOT] as $type => $key) {
             // Subplugins files only have the plugintypes key.
@@ -273,7 +273,7 @@ class ComponentResolver
      * @param string $component the component
      * @param string $type the type of component, PLUGIN_ROOT, PLUGIN_TYPE_ROOT or SUBSYSTEM_ROOT
      */
-    private function addComponentToTree(string $component, string $componentDirectory, string $type): void
+    protected function addComponentToTree(string $component, string $componentDirectory, string $type): void
     {
         $currentNode =& $this->tree;
         foreach (explode('/', $componentDirectory) as $dirComponent) {
