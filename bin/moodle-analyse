@@ -3,7 +3,7 @@
 
 use MoodleAnalyse\Console\Application;
 
-require_once __DIR__ . '/../vendor/autoload.php';
+require_once $_composer_autoload_path ?? __DIR__ . '/../vendor/autoload.php';
 
 $app = new Application();
 $app->run();
