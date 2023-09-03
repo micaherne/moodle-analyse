@@ -4,6 +4,8 @@ namespace MoodleAnalyse\Codebase;
 
 use Exception;
 
+use function simplexml_load_file;
+
 class ThirdPartyLibsReader
 {
 

@@ -76,4 +76,54 @@ class DirrootAnalyserTest extends TestCase
             DirrootAnalyser::ABSOLUTE_PATH_CHECK
         ];
     }
+
+    /**
+     * @dataProvider extractWrangleData
+     */
+    public function testExtractWrangle(string $code, callable $test): void
+    {
+        $analyser = new DirrootAnalyser();
+
+        $pathFindingVisitor = new PathFindingVisitor();
+        $pathResolvingVisitor = new PathResolvingVisitor();
+
+        $lexer = new Lexer(['usedAttributes' => ['startLine', 'endLine', 'startFilePos', 'endFilePos']]);
+        $parser = (new ParserFactory())->create(ParserFactory::PREFER_PHP7, $lexer);
+        $traverser1 = new NodeTraverser();
+        $traverser1->addVisitor(new NameResolver());
+        $traverser1->addVisitor(new ParentConnectingVisitor());
+        $traverser1->addVisitor($pathFindingVisitor);
+
+        $traverser2 = new NodeTraverser();
+        $traverser2->addVisitor(new NameResolver());
+        $traverser2->addVisitor(new ParentConnectingVisitor());
+        $traverser2->addVisitor($pathResolvingVisitor);
+
+        $code = '<?php ' . $code . ';';
+        $nodes = $parser->parse($code);
+        $nodes = $traverser1->traverse($nodes);
+        $traverser2->traverse($nodes);
+
+        $pathNodes = $pathResolvingVisitor->getPathNodes();
+        $this->assertCount(1, $pathNodes);
+
+        $pathNode = $pathNodes[0];
+
+        $result = $analyser->extractWrangle($pathNode, $code);
+        $test($result);
+    }
+
+    public function extractWrangleData()
+    {
+        yield [
+        '    function get_dir() {
+                global $CFG;
+        
+                return substr($this->rootdir, strlen($CFG->dirroot));
+        }',
+            function($result) {
+                $this->assertNotNull($result);
+            }
+        ];
+    }
 }

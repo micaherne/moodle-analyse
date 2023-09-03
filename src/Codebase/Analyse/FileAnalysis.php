@@ -15,6 +15,8 @@ class FileAnalysis
 
     private ?bool $includesConfig = null;
 
+    private bool $isCliScript = false;
+
     public function __construct(private SplFileInfo $finderFile, private ?string $fileComponent)
     {
     }
@@ -51,6 +53,16 @@ class FileAnalysis
     public function getIncludesConfig(): ?bool
     {
         return $this->includesConfig;
+    }
+
+    public function isCliScript(): bool
+    {
+        return $this->isCliScript;
+    }
+
+    public function setIsCliScript(bool $isCliScript): void
+    {
+        $this->isCliScript = $isCliScript;
     }
 
 

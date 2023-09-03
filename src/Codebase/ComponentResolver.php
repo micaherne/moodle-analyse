@@ -136,7 +136,7 @@ class ComponentResolver
      *       and potentially a better solution for root.
      *
      * @param string $path a relative path to a file or directory
-     * @return array|null array of [type, name, path within component] or null if it can't be determined
+     * @return array<string, string, string>|null array of [type, name, path within component] or null if it can't be determined
      * @throws \Exception
      */
     public function resolveComponent(string $path): ?array
@@ -172,6 +172,10 @@ class ComponentResolver
         $lastPluginRootValue = null;
         $lastSubsystemValue = null;
         while ($pathItem = array_shift($pathParts)) {
+
+            if (str_contains($pathItem, '{') && strpos($pathItem, '{') !== 0) {
+                return null;
+            }
 
             // Keep track of the last plugin root we visited in case we don't end up in a subplugin.
             if (array_key_exists(self::PLUGIN_ROOT, $currentNode)) {
@@ -251,6 +255,8 @@ class ComponentResolver
                     }
                     return [$pluginType, $pathItem, $remainingPath];
                 }
+            } elseif (!is_null($pathItem) && $pathParts === [] && str_starts_with($pathItem, '{') && str_ends_with($pathItem, '}')) {
+                return null;
             }
 
             if (!is_null($lastPluginRootValue)) {
@@ -264,7 +270,7 @@ class ComponentResolver
             return ['core', 'root', $path];
         }
 
-        return [];
+        return ['core', 'root', $path];
     }
 
     /**
@@ -273,15 +279,19 @@ class ComponentResolver
      * @param string $component the component
      * @param string $type the type of component, PLUGIN_ROOT, PLUGIN_TYPE_ROOT or SUBSYSTEM_ROOT
      */
-    protected function addComponentToTree(string $component, string $componentDirectory, string $type): void
+    private function addComponentToTree(string $component, string $componentDirectory, string $type): void
     {
         $currentNode =& $this->tree;
-        foreach (explode('/', $componentDirectory) as $dirComponent) {
-            if (!array_key_exists($dirComponent, $currentNode)) {
-                $currentNode[$dirComponent] = [];
+
+        if ($componentDirectory !== '') {
+            foreach (explode('/', $componentDirectory) as $dirComponent) {
+                if (!array_key_exists($dirComponent, $currentNode)) {
+                    $currentNode[$dirComponent] = [];
+                }
+                $currentNode =& $currentNode[$dirComponent];
             }
-            $currentNode =& $currentNode[$dirComponent];
         }
+
         if ($type === self::PLUGIN_ROOT) {
             $component = explode('_', $component, 2);
         }

@@ -25,7 +25,7 @@ class ComponentsFinder
     // Also from core_component.
     protected static $supportsubplugins = ['mod', 'editor', 'tool', 'local'];
 
-    public function getComponents($moodleDirectory) {
+    public function getComponents($moodleDirectory): \Generator {
         $mainComponentsFile = $moodleDirectory . '/lib/components.json';
         if (!is_file($mainComponentsFile)) {
             throw new \Exception("Components file not found in $moodleDirectory/lib/components.json");

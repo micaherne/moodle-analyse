@@ -14,5 +14,7 @@ class RelativeDirPathRewriteTest extends TestCase
         $this->assertEquals('../bar/target.php', RelativeDirPathRewrite::calculateRelativePath('@/plugin/foo/baz/test.php', '@/plugin/foo/bar/target.php'));
         $this->assertEquals('../../bar/target.php', RelativeDirPathRewrite::calculateRelativePath('@/plugin/foo/baz/bar/test.php', '@/plugin/foo/bar/target.php'));
         $this->assertEquals('../../../foo/bar/baz/target.php', RelativeDirPathRewrite::calculateRelativePath('@/plugin/bim/baz/bar/test.php', '@/plugin/foo/bar/baz/target.php'));
+        $this->assertEquals('gui_ajax/theme/{$theme}/config.php', RelativeDirPathRewrite::calculateRelativePath('@/mod/chat/lib.php', '@/mod/chat/gui_ajax/theme/{$theme}/config.php'));
+
     }
 }

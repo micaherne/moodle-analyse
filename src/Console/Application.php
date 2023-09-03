@@ -24,6 +24,8 @@ class Application extends \Symfony\Component\Console\Application
         $commands[] = new ExtractPlugin();
         $commands[] = new RewriteForPluginExtraction();
         $commands[] = new ExtractAllPlugins();
+
+        $commands[] = new Command\Speculative\ExtractComponentPackages();
         return $commands;
     }
 

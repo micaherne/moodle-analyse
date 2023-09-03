@@ -12,7 +12,6 @@ use Symfony\Component\Finder\SplFileInfo;
 
 class FileFinder
 {
-    private const THIRDPARTYLIBS_XML = 'thirdpartylibs.xml';
 
     public function __construct(protected string $moodleroot)
     {

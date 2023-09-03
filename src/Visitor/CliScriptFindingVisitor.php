@@ -34,7 +34,4 @@ class CliScriptFindingVisitor extends NodeVisitorAbstract
         }
     }
 
-
-
-
 }

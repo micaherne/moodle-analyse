@@ -57,11 +57,13 @@ class PathCode
         $pathComponent = $this->pathComponent;
         // We have a couple of component names returned by ComponentResolver that are not known by Moodle, so we
         // rewrite these here.
-        if ($pathComponent === 'core_lib') {
+        // TODO: Something smells here. We're getting this data from ComponentResolver::resolveComponent() which
+        //       makes a distinction between core_root and undetermined, but then we're throwing it away.
+        /*if ($pathComponent === 'core_lib') {
             $pathComponent = 'core';
         } elseif ($pathComponent === 'core_root') {
             $pathComponent = null;
-        }
+        }*/
         return $pathComponent;
     }
 

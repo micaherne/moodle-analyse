@@ -4,6 +4,9 @@ namespace MoodleAnalyse\Codebase\Rewrite;
 
 use MoodleAnalyse\Codebase\Analyse\FileAnalysis;
 
+/**
+ * @deprecated
+ */
 interface Rewriter
 {
 

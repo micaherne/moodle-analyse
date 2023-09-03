@@ -81,12 +81,16 @@ class ComponentResolverTest extends TestCase
         );
     }
 
-    public function resolveComponentData(): Generator
+    public static function resolveComponentData(): Generator
     {
+        // TODO: Make this work. File could be inside an admin tool directory so shouldn't assume it's core_admin.
+        yield ['@/admin/{$file}', null];
+        yield ['@/admin{$docsdir}', null];
         yield [
             '@/mod/scorm/datamodels/{$scorm->version}lib.php',
             ['mod', 'scorm', 'datamodels/{$scorm->version}lib.php']
         ];
+        yield ['@/theme/{$plugin}/classes/output/core_renderer.php', ['theme', '{$plugin}', 'classes/output/core_renderer.php']];
         // Shouldn't assume that this is theme_$file component.
         yield ['@/theme/{$file}', null];
         yield ['@/lib/', ['core', null, '']];
@@ -102,6 +106,7 @@ class ComponentResolverTest extends TestCase
         yield ['@/mod/assign/feedback/index.php', ['mod', 'assign', 'feedback/index.php']];
         yield ['@/mod/assign/feedback/db/index.php', ['mod', 'assign', 'feedback/db/index.php']];
         yield ['@/mod/assign/feedback/offline/index.php', ['assignfeedback', 'offline', 'index.php']];
+        yield ['@/mod/assign/feedback/{$plugin}/index.php', ['assignfeedback', '{$plugin}', 'index.php']];
         yield ['@/mod/assign/feedback/offline/db/install.xml', ['assignfeedback', 'offline', 'db/install.xml']];
         yield ['@/mod/assign/backup/moodle2', ['mod', 'assign', 'backup/moodle2']];
         yield ['@/mod/assign/backup/moodle2/', ['mod', 'assign', 'backup/moodle2/']];

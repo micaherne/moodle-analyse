@@ -10,6 +10,14 @@ class GetComponentPathRewrite extends Rewrite
     public function __construct(PathCode $pathCode)
     {
         $pathComponent = $pathCode->getPathComponent();
+        if (is_null($pathComponent)) {
+            throw new \RuntimeException("Unable to rewrite to an unknown component");
+        } elseif ($pathComponent === 'core_root') {
+            throw new \RuntimeException("Unable to rewrite to the core root component");
+        } elseif ($pathComponent === 'core_lib') {
+            // The correct Moodle name for this component is 'core'.
+            $pathComponent = 'core';
+        }
         $pathComponentCode = is_null($pathComponent) ? 'null' : '"' . $pathComponent . '"';
         parent::__construct(
             $pathCode->getPathCodeStartFilePos(),

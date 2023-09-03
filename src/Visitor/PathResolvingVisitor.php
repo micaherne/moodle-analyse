@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace MoodleAnalyse\Visitor;
 
 use Exception;
+use MoodleAnalyse\Codebase\DirrootAnalyser;
 use PhpParser\Node;
 use PhpParser\NodeVisitorAbstract;
 use SplStack;
@@ -72,6 +73,8 @@ class PathResolvingVisitor extends NodeVisitorAbstract implements FileAwareInter
     /** @var string has the $CFG variable been accessed at this point in the scope? */
     private const CFG_USED = 'cfgUsed';
 
+    /** @var string a dirroot wrangle */
+    public const DIRROOT_WRANGLE = 'dirrootWrangle';
 
     private string $filePath;
 
@@ -134,12 +137,7 @@ class PathResolvingVisitor extends NodeVisitorAbstract implements FileAwareInter
         if ($node instanceof Node\Stmt\Global_) {
             foreach ($node->vars as $var) {
                 if ($var instanceof Node\Expr\Variable) {
-                    $currentScope->
-                    {
-                    self::GLOBAL_VARIABLES
-                    }
-
-                    [$var->name] = 1;
+                    $currentScope->{self::GLOBAL_VARIABLES}[$var->name] = 1;
                 }
             }
         }
@@ -288,6 +286,7 @@ class PathResolvingVisitor extends NodeVisitorAbstract implements FileAwareInter
                 $expressionNode->setAttribute(self::IS_CONFIG_INCLUDE, true);
                 $this->afterConfigInclude = true;
             }
+
             $this->pathNodes[] = $node;
         }
     }

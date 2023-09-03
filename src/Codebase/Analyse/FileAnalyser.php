@@ -7,10 +7,12 @@ namespace MoodleAnalyse\Codebase\Analyse;
 use Exception;
 use MoodleAnalyse\Codebase\CodebasePath;
 use MoodleAnalyse\Codebase\ComponentResolver;
+use MoodleAnalyse\Codebase\DirrootAnalyser;
 use MoodleAnalyse\Codebase\PathCode;
 use MoodleAnalyse\Codebase\ResolvedPathProcessor;
 use MoodleAnalyse\Visitor\PathFindingVisitor;
 use MoodleAnalyse\Visitor\PathResolvingVisitor;
+use MoodleAnalyse\Visitor\Util;
 use PhpParser\Lexer;
 use PhpParser\Node\Expr;
 use PhpParser\NodeTraverser;
@@ -29,6 +31,7 @@ class FileAnalyser
     private ResolvedPathProcessor $resolvedPathProcessor;
     private NodeTraverser $preProcessTraverser;
     private NodeTraverser $processTraverser;
+    private DirrootAnalyser $dirrootAnalyser;
 
     public function __construct(private readonly ComponentResolver $componentResolver)
     {
@@ -47,6 +50,8 @@ class FileAnalyser
         $this->processTraverser->addVisitor($this->pathResolvingVisitor);
 
         $this->resolvedPathProcessor = new ResolvedPathProcessor();
+
+        $this->dirrootAnalyser = new DirrootAnalyser();
     }
 
     /**
@@ -73,11 +78,22 @@ class FileAnalyser
         if (is_null($nodes)) {
             throw new RuntimeException("Unable to parse file $relativePathname");
         }
+
+        // First check if this is a CLI script.
+        // We assume that the CLI_SCRIPT is a top-level node.
+        foreach ($nodes as $node) {
+            if (Util::isCliScriptDefine($node)) {
+                $fileAnalysis->setIsCliScript(true);
+                break;
+            }
+        }
+
         $nodes = $this->preProcessTraverser->traverse($nodes);
 
         $this->processTraverser->traverse($nodes);
 
         $pathNodes = $this->pathResolvingVisitor->getPathNodes();
+
         foreach ($pathNodes as $pathNode) {
 
             // Check for config.php includes (i.e. the file is some kind of entry point).
@@ -119,21 +135,32 @@ class FileAnalyser
 
             $parentPathCode = null;
             if ($pathNode->hasAttribute(PathResolvingVisitor::CONTAINING_EXPRESSION)) {
-                /** @var Expr $parentNode */
-                $parentNode = $pathNode->getAttribute(PathResolvingVisitor::CONTAINING_EXPRESSION);
-                $parentCode = substr(
-                    $contents,
-                    $parentNode->getStartFilePos(),
-                    $parentNode->getEndFilePos() - $parentNode->getStartFilePos() + 1
-                );
 
-                $parentPathCode = new PathCode(
-                    $parentCode,
-                    $parentNode->getStartLine(),
-                    $parentNode->getEndLine(),
-                    $parentNode->getStartFilePos(),
-                    $parentNode->getEndFilePos()
-                );
+                // Check if the resolved include is a dirroot wrangle.
+                $dirrootWrangle = null;
+                if ($this->dirrootAnalyser->isDirroot($resolvedInclude)) {
+                    $dirrootWrangle = $this->dirrootAnalyser->extractWrangle($pathNode, $contents);
+                }
+
+                if (!is_null($dirrootWrangle)) {
+                    $parentPathCode = $dirrootWrangle;
+                } else {
+                    /** @var Expr $parentNode */
+                    $parentNode = $pathNode->getAttribute(PathResolvingVisitor::CONTAINING_EXPRESSION);
+                    $parentCode = substr(
+                        $contents,
+                        $parentNode->getStartFilePos(),
+                        $parentNode->getEndFilePos() - $parentNode->getStartFilePos() + 1
+                    );
+
+                    $parentPathCode = new PathCode(
+                        $parentCode,
+                        $parentNode->getStartLine(),
+                        $parentNode->getEndLine(),
+                        $parentNode->getStartFilePos(),
+                        $parentNode->getEndFilePos()
+                    );
+                }
 
                 $parentPathCode->setPathComponent(null);
                 $parentPathCode->setPathWithinComponent(null);
@@ -142,7 +169,7 @@ class FileAnalyser
                 unset($parentNode);
             }
 
-            $category = $this->resolvedPathProcessor->categorise($resolvedInclude);
+            $category = $this->resolvedPathProcessor->categoriseResolvedPath($resolvedInclude);
 
             $fromCoreComponent = !is_null($pathNode->getAttribute(PathResolvingVisitor::FROM_CORE_COMPONENT));
             $assignedFromPathVar = !is_null(
@@ -150,9 +177,11 @@ class FileAnalyser
             );
 
             $codebasePath = new CodebasePath($relativePathname, $sourceComponentName, $pathCode, $parentPathCode);
-            $codebasePath->setPathCategory($category);
             $codebasePath->setFromCoreComponent($fromCoreComponent);
             $codebasePath->setAssignedFromPreviousPathVariable($assignedFromPathVar);
+
+            $category = $this->resolvedPathProcessor->categoriseCodebasePath($codebasePath);
+            $codebasePath->setPathCategory($category);
 
             $fileAnalysis->addCodebasePath($codebasePath);
         }

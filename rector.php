@@ -8,6 +8,6 @@ return static function (RectorConfig $rectorConfig): void {
     $rectorConfig->paths([__DIR__ . '/src', __DIR__ . '/tests']);
     $rectorConfig->sets([
         SetList::CODE_QUALITY,
-        SetList::PHP_80
+        SetList::PHP_82
     ]);
 };

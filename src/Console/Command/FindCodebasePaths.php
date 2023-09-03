@@ -91,6 +91,12 @@ class FindCodebasePaths extends Command
                 $row[] = $codebasePath->isFromCoreComponent() ? "Yes": "No";
                 $row[] = $codebasePath->isAssignedFromPreviousPathVariable() ? "Yes": "No";
 
+                if (!is_null($parentCode) && $parentCode instanceof \MoodleAnalyse\Codebase\PathCodeDirrootWrangle) {
+                    $row[] = 'WRANGLE!!!: ' . $parentCode->getClassification() . ' ' . ($parentCode->getVariableName() ?? '') . ' ' . ($parentCode->getOther() ?? '');
+                } else {
+                    $row[] = '';
+                }
+
                 fputcsv($out, $row);
             }
         }

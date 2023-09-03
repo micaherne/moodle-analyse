@@ -87,7 +87,7 @@ class RewriteForPluginExtraction extends \Symfony\Component\Console\Command\Comm
             $pathCode = $codebasePath->getPathCode();
             $pathComponent = $pathCode->getPathComponent();
 
-            // Ignore dirroot wrongling.
+            // Ignore dirroot wrangling.
             if ($codebasePath->getPathCategory() === PathCategory::DirRoot) {
                 continue;
             }

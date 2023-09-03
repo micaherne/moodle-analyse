@@ -20,11 +20,7 @@ class ResolvedPathProcessor
 
     private const QUOTE = '\'';
 
-    public function __construct(private ?ComponentResolver $componentResolver = null)
-    {
-    }
-
-    public function categorise(string $resolvedPath): ?PathCategory
+    public function categoriseResolvedPath(string $resolvedPath): ?PathCategory
     {
         if (preg_match('#^@([/\\\\]|\{\\\\DIRECTORY_SEPARATOR})?$#', $resolvedPath)) {
             return PathCategory::DirRoot;
@@ -56,6 +52,15 @@ class ResolvedPathProcessor
         } else {
             return null;
         }
+    }
+
+    public function categoriseCodebasePath(CodebasePath $codebasePath): ?PathCategory
+    {
+        $resolvedPath = $codebasePath->getPathCode()->getResolvedPath();
+
+        // TODO: If the resolved path is null (or potentially not null but needs more investigation), we could
+        //       investigate it more thoroughly.
+        return $this->categoriseResolvedPath($resolvedPath);
     }
 
     /**
@@ -150,67 +155,6 @@ class ResolvedPathProcessor
         return $this->mergeStrings($result);
     }
 
-    public function toCoreCodebaseCall(string $resolvedInclude, ?string $filePath = null): ?string
-    {
-        if (!is_null($this->componentResolver)) {
-            $resolvedComponent = $this->componentResolver->resolveComponent($resolvedInclude);
-            if (!is_null($resolvedComponent)) {
-                $componentPathCall = $this->toCoreCodebaseComponentPathCall($resolvedComponent);
-                if (!is_null($componentPathCall)) {
-                    return $componentPathCall;
-                }
-            }
-        }
-        return $this->toCoreCodebasePathCall($resolvedInclude, $filePath);
-    }
-
-    private function toCoreCodebaseComponentPathCall(array $resolvedComponent): ?string
-    {
-        $variables = array_map(function (?string $part) {
-            if (is_null($part)) {
-                return 'null';
-            } else {
-                return $this->toCodeString($part);
-            }
-        }, $resolvedComponent);
-        return '\core_codebase::component_path(' . implode(', ', $variables) . ')';
-    }
-
-    public function toCoreCodebasePathCall(string $resolvedInclude, ?string $filePath = null): ?string
-    {
-        // Just scam this for the time being.
-        $codeString = $this->toCodeString($resolvedInclude, $filePath);
-
-        if (!str_starts_with($resolvedInclude, '@')) {
-            return $codeString;
-        }
-
-        // Return null if it's just dirroot on its own, or with a slash. This is more likely to be a bit of
-        // dirroot wrangling than an actual link. For example, checking something is in the codebase (starts
-        // with dirroot), making an absolute path relative (stripping dirroot off the start), or the crazy stuff
-        // in \is_dataroot_insecure().
-        if (preg_match('#^@[/\\\]?$#', $resolvedInclude) || preg_match(
-                '#^@{\\\\?DIRECTORY_SEPARATOR}$#',
-                $resolvedInclude
-            )) {
-            return $codeString;
-        }
-
-        $result = $codeString;
-
-        $result = str_replace('$CFG->admin', '\'admin\'', $result);
-        $result = str_replace('$CFG->libdir', '$CFG->dirroot . \'/lib\'', $result);
-        $result = $this->mergeStrings($result);
-
-        if (str_starts_with($result, '$CFG->dirroot')) {
-            $result = str_replace('$CFG->dirroot . ', '', $result);
-            $result = '\core_codebase::path(' . $result . ')';
-        } else {
-            $result = null;
-        }
-
-        return $result;
-    }
 
     /**
      * We can't simply use $includeParts = explode('/', $resolvedInclude);
@@ -233,5 +177,6 @@ class ResolvedPathProcessor
     {
         return str_replace(self::QUOTE . ' . ' . self::QUOTE, '', $result);
     }
+
 
 }

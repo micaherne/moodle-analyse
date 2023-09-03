@@ -12,10 +12,10 @@ class ResolvedPathProcessorTest extends TestCase
      * @param string $resolvedInclude
      * @param string $expectedCategory
      */
-    public function testCategorise(string $resolvedInclude, PathCategory $expectedCategory): void
+    public function testCategoriseResolvedPath(string $resolvedInclude, PathCategory $expectedCategory): void
     {
         $processor = new ResolvedPathProcessor();
-        $category = $processor->categorise($resolvedInclude);
+        $category = $processor->categoriseResolvedPath($resolvedInclude);
         $this->assertEquals($expectedCategory, $category);
     }
 
@@ -54,17 +54,6 @@ class ResolvedPathProcessorTest extends TestCase
         $method->setAccessible(true);
         $this->assertEquals($expected, $method->invoke($processor, $resolvedInclude));
     }
-
-    public function testToCoreCodebasePathCall(): void
-    {
-        $processor = new ResolvedPathProcessor();
-        $this->assertEquals('$CFG->dirroot', $processor->toCoreCodebasePathCall('@'));
-        $this->assertEquals('$CFG->dirroot . \'/\'', $processor->toCoreCodebasePathCall('@/'));
-        $this->assertEquals('$CFG->dirroot . \'\\\'', $processor->toCoreCodebasePathCall('@\\'));
-        $this->assertEquals('$CFG->dirroot . DIRECTORY_SEPARATOR', $processor->toCoreCodebasePathCall('@{DIRECTORY_SEPARATOR}'));
-        $this->assertEquals('$CFG->dirroot . \DIRECTORY_SEPARATOR', $processor->toCoreCodebasePathCall('@{\DIRECTORY_SEPARATOR}'));
-    }
-
 
     public function categoriseTestData(): \Generator
     {

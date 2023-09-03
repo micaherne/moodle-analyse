@@ -12,23 +12,29 @@ class flat_directory_component_loader {
     const SUBPLUGIN_ROOT = '!';
     private $pluginsdir;
 
+    private $prefix;
+
     private $tree;
 
     /**
-     * @param $pluginsdir
+     * @param string $pluginsdir
+     * @param string $prefix The prefix to add to the component name (e.g. "moodle-")
      */
-    public function __construct($pluginsdir)
+    public function __construct($pluginsdir, $prefix = '')
     {
         $this->pluginsdir = $pluginsdir;
         // TODO: Check this is a valid directory (moodle exception may not be available yet?)
+
+        $this->prefix = $prefix;
     }
 
 
     public function fetch_plugins($plugintype) {
         $result = [];
         foreach (scandir($this->pluginsdir) as $dir) {
-            if (strpos($dir, $plugintype . '_') === 0) {
-                $pluginname = substr($dir, strpos($dir, '_') + 1);
+            if (str_starts_with($dir, $this->prefix . $plugintype . '_')) {
+                $frankenstylename = substr($dir, strlen($this->prefix));
+                $pluginname = substr($frankenstylename, strpos($frankenstylename, '_') + 1);
                 $result[$pluginname] = realpath($this->pluginsdir . '/' . $dir);
             }
         }
@@ -36,8 +42,6 @@ class flat_directory_component_loader {
     }
 
     public function get_path_from_relative($relativepath): ?string {
-        global $CFG;
-
         $node = $this->get_tree();
 
         $pathparts = explode('/', ltrim($relativepath, '/'));
@@ -79,14 +83,14 @@ class flat_directory_component_loader {
      * @return string|null
      */
     public function get_component_path(string $component, string $relativepath): ?string {
-        if (!is_dir($this->pluginsdir . '/' . $component)) {
+        if (!is_dir($this->pluginsdir . '/' . $this->prefix . $component)) {
             return null;
         }
         if ($relativepath === '') {
-            return $this->pluginsdir . '/' . $component;
+            return $this->pluginsdir . '/' . $this->prefix . $component;
         }
 
-        return $this->pluginsdir . '/' . $component . '/' . ltrim($relativepath, '/');
+        return $this->pluginsdir . '/' . $this->prefix . $component . '/' . ltrim($relativepath, '/');
     }
 
     /**
@@ -105,8 +109,8 @@ class flat_directory_component_loader {
 
         // Get from cache.
         $hash = stat($this->pluginsdir)['mtime'];
-        $cachefile = $CFG->dataroot . '/flat_directory_component_loader.php';
-        if (is_file($cachefile)) {
+        $cachefile = null; // $CFG->dataroot . '/flat_directory_component_loader.php';
+        if (false && is_file($cachefile)) {
             $cached = include($cachefile);
             if ($cached->hash === $hash) {
                 $this->tree = $cached->tree;
@@ -128,13 +132,23 @@ class flat_directory_component_loader {
                 continue;
             }
 
-            // Check it's a valid plugin type (this should never fail).
-            [$type, $name] = core_component::normalize_component($dir);
-            $typepath = $plugintypes[$type];
-            if (!(strpos($typepath, $CFG->dirroot) === 0)) {
-                // TODO: Throw an exception?
+            if (!empty($this->prefix) && !str_starts_with($dir->getFilename(), $this->prefix)) {
                 continue;
             }
+
+            $frankenstyle = substr($dir->getFilename(), strlen($this->prefix));
+
+            if (!str_contains($frankenstyle, '_')) {
+                continue;
+            }
+
+            // Check it's a valid plugin type (this should never fail).
+            [$type, $name] = core_component::normalize_component($frankenstyle);
+            $typepath = $plugintypes[$type];
+
+            // We don't check here that the type path is under dirroot as it could just as sensibly
+            // be inside the parent plugin directory. (We don't currently do that as it's kind of
+            // complicated and there are other things to think about first.)
 
             $typepathrelative = substr($typepath, strlen($CFG->dirroot) + 1);
 
@@ -165,8 +179,10 @@ class flat_directory_component_loader {
 
         }
 
-        $cached = (object) ['hash' => $hash, 'tree' => $this->tree];
-        file_put_contents($cachefile, '<?php return ' . var_export($cached, true) . ';');
+        if (!is_null($cachefile)) {
+            $cached = (object) ['hash' => $hash, 'tree' => $this->tree];
+            file_put_contents($cachefile, '<?php return ' . var_export($cached, true) . ';');
+        }
 
         return $this->tree;
     }
@@ -178,9 +194,11 @@ class flat_directory_component_loader {
         }
         $dirpartscount = count($dirparts);
         if (!array_key_exists($dir, $node)) {
-            $node[$dir] = $dirpartscount === 0 ? $attributes: [];
+            $node[$dir] = [];
         }
         if ($dirpartscount === 0) {
+            // Always merge the attributes as, for example, subplugin roots may be added before the plugin root.
+            $node[$dir] += $attributes;
             return;
         }
         $this->add_to_node($node[$dir], $dirparts, $attributes);

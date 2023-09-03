@@ -16,7 +16,7 @@ class Util
             && $node->right instanceof Node\Expr\Exit_
             && $node->left instanceof Node\Expr\FuncCall
             && $node->left->name instanceof Node\Name
-            && $node->left->name->parts[0] == 'defined'
+            && $node->left->name->getParts()[0] == 'defined'
             && $node->left->args[0] instanceof Node\Arg
             && $node->left->args[0]->value instanceof Node\Scalar\String_
             && $node->left->args[0]->value->value == 'MOODLE_INTERNAL';

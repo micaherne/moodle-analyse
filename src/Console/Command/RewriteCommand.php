@@ -12,6 +12,11 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Logger\ConsoleLogger;
 use Symfony\Component\Console\Output\OutputInterface;
 
+/**
+ * Rewrite the Moodle codebase using a particular rewriter.
+ *
+ * @deprecated This was kind of sucky and is no longer used.
+ */
 class RewriteCommand extends Command
 {
     private const MOODLE_DIR = 'moodle-dir';

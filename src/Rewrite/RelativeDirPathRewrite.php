@@ -25,7 +25,8 @@ class RelativeDirPathRewrite extends Rewrite
         $resolvedFromRoot = substr($resolvedFilename, strlen($componentPath));
         $targetFromRoot = substr($resolvedTarget, strlen($componentPath));
 
-        parent::__construct($pathCode->getPathCodeStartFilePos(), $pathCode->getPathCodeEndFilePos(), '__DIR__ . \'/' . self::calculateRelativePath($resolvedFromRoot, $targetFromRoot) . '\'');
+        // Must be double quotes as it may contain variables.
+        parent::__construct($pathCode->getPathCodeStartFilePos(), $pathCode->getPathCodeEndFilePos(), '__DIR__ . "/' . self::calculateRelativePath($resolvedFromRoot, $targetFromRoot) . '"');
     }
 
     public static function calculateRelativePath(string $sourceFilename, string $targetFilename): string

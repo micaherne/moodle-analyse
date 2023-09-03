@@ -8,6 +8,9 @@ use MoodleAnalyse\Codebase\Rewrite\Rewriter;
 use MoodleAnalyse\Rewrite\GetComponentPathRewrite;
 use MoodleAnalyse\Rewrite\Rewrite;
 
+/**
+ * @deprecated This is only for {@link \MoodleAnalyse\Console\Command\RewriteCommand} and will be removed.
+ */
 class SimplePathsFromCoreToNonCoreRewriter extends AbstractRewriter implements Rewriter
 {
 

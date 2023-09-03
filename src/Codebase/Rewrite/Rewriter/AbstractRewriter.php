@@ -7,6 +7,9 @@ use Psr\Log\LoggerInterface;
 use Psr\Log\NullLogger;
 use Symfony\Component\Finder\SplFileInfo;
 
+/**
+ * @deprecated This is only for {@link \MoodleAnalyse\Console\Command\RewriteCommand} and will be removed.
+ */
 class AbstractRewriter
 {
     public function __construct(protected readonly LoggerInterface $logger = new NullLogger())
