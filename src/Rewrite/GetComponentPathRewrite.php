@@ -18,6 +18,8 @@ class GetComponentPathRewrite extends Rewrite
             // The correct Moodle name for this component is 'core'.
             $pathComponent = 'core';
         }
+
+        // TODO: This seems dumb, we've already checked it's not null.
         $pathComponentCode = is_null($pathComponent) ? 'null' : '"' . $pathComponent . '"';
         parent::__construct(
             $pathCode->getPathCodeStartFilePos(),

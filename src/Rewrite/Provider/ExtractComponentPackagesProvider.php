@@ -9,6 +9,7 @@ use MoodleAnalyse\Codebase\CodebasePath;
 use MoodleAnalyse\Codebase\ComponentResolver;
 use MoodleAnalyse\Codebase\PathCategory;
 use MoodleAnalyse\Rewrite\GetComponentPathRewrite;
+use MoodleAnalyse\Rewrite\GetCorePathRewrite;
 use MoodleAnalyse\Rewrite\GetPathFromRelativeRewrite;
 use MoodleAnalyse\Rewrite\RelativeDirPathRewrite;
 use MoodleAnalyse\Rewrite\Rewrite;
@@ -213,22 +214,21 @@ class ExtractComponentPackagesProvider
                 //       Although I think there's something wonky with using get_component_path() for plugins that
                 //       are included in the moodle-core root package so that needs checked.
                 // We get the path to the component within the core package and append it to dirroot.
-                $pathPrefix = '$CFG->dirroot . "/';
-                if ($pathComponent === 'core_lib') {
-                    $pathPrefix .= 'lib/';
-                } elseif ($pathComponent === 'core_root') {
-                    $pathPrefix .= '';
+
+                // If the target component is an actual core one, we use core_component::get_core_path()
+                // to avoid having to ensure that $CFG is in scope. Otherwise (if it's a plugin that's in the
+                // moodle-core package), we just use get_component_path() as normal
+                if ($pathComponent === 'core_root') {
+                    $rewrite = new GetCorePathRewrite($pathCode);
+                    $result->setRewrite($rewrite);
+                    $result->setExplanation("Rewrite path to non-component file in core package to use get_core_path()");
+                    return $result;
                 } else {
-                    $pathPrefix .= $this->componentDirectories[$pathComponent] . '/';
+                    $rewrite = new GetComponentPathRewrite($pathCode);
+                    $result->setRewrite($rewrite);
+                    $result->setExplanation("Rewrite path to non-core component inside core package to use get_component_path()");
+                    return $result;
                 }
-                $rewrite = new Rewrite(
-                    $pathCode->getPathCodeStartFilePos(),
-                    $pathCode->getPathCodeEndFilePos(),
-                    $pathPrefix . $pathCode->getPathWithinComponent() . '"'
-                );
-                $result->setRewrite($rewrite);
-                $result->setExplanation("Rewrite path inside core component to use dirroot");
-                return $result;
             } else {
                 $rewrite = new GetComponentPathRewrite($pathCode);
                 $result->setRewrite($rewrite);
