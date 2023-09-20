@@ -4,6 +4,9 @@ namespace MoodleAnalyse\Rewrite;
 
 use MoodleAnalyse\Codebase\PathCode;
 
+/**
+ * Rewrite a path to a component to use core_component::get_component_path().
+ */
 class GetComponentPathRewrite extends Rewrite
 {
 
@@ -19,13 +22,14 @@ class GetComponentPathRewrite extends Rewrite
             $pathComponent = 'core';
         }
 
-        // TODO: This seems dumb, we've already checked it's not null.
-        $pathComponentCode = is_null($pathComponent) ? 'null' : '"' . $pathComponent . '"';
+        $pathComponentCode = $this->toCodeString($pathComponent);
+        $pathInComponentCode = $this->toCodeString($pathCode->getPathWithinComponent());
+
         parent::__construct(
             $pathCode->getPathCodeStartFilePos(),
             $pathCode->getPathCodeEndFilePos(),
-            '\core_component::get_component_path(' . $pathComponentCode . ', "' . $pathCode->getPathWithinComponent(
-            ) . '")'
+            '\core_component::get_component_path(' . $pathComponentCode . ', ' . $pathInComponentCode . ')'
         );
     }
+
 }

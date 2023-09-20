@@ -73,7 +73,7 @@ class PathResolvingVisitorTest extends TestCase
 
     }
 
-    public function coreComponentCheckingProvider()
+    public static function coreComponentCheckingProvider()
     {
 
         yield [
@@ -82,33 +82,33 @@ class PathResolvingVisitorTest extends TestCase
             $file = core_component::get_plugin_directory('qtype', $qtype) . '/tests/helper.php';
             include_once($file);
             EOD,
-            null
-        ];
+                    null
+                ];
 
-        yield [
-            'backup/util/plan/backup_structure_step.class.php',
-            <<<'EOD'
+                yield [
+                    'backup/util/plan/backup_structure_step.class.php',
+                    <<<'EOD'
             $parentfile = core_component::get_component_directory($plugintype . '_' . $pluginname) .
             '/backup/moodle2/' . $parentclass . '.class.php';
             require($parentfile);
             EOD,
-            null
-        ];
+                    null
+                ];
 
-        yield [
-            'admin/settings.php',
-            <<<'EOD'
+                yield [
+                    'admin/settings.php',
+                    <<<'EOD'
             foreach (core_component::get_plugin_list('report') as $report => $plugindir) {
                 $settings_path = "$plugindir/settings.php";
                 require($settings_path);
             }
             EOD,
-            null
-        ];
+                    null
+                ];
 
-        yield [
-            'backup/util/plan/backup_structure_step.class.php',
-            <<<'EOD'
+                yield [
+                    'backup/util/plan/backup_structure_step.class.php',
+                    <<<'EOD'
             $pluginsdirs = core_component::get_plugin_list($plugintype);
             foreach ($pluginsdirs as $name => $plugindir) {
                 $classname = 'backup_' . $plugintype . '_' . $name . '_plugin';
@@ -118,32 +118,32 @@ class PathResolvingVisitorTest extends TestCase
                 }
             }
             EOD,
-            null
-        ];
+                    null
+                ];
 
-        yield [
-            'lib/portfoliolib.php',
-            <<<'EOD'
+                yield [
+                    'lib/portfoliolib.php',
+                    <<<'EOD'
             if (!$componentloc = core_component::get_component_directory($component)) {
                 throw new portfolio_button_exception('nocallbackcomponent', 'portfolio', '', $component);
             }
             require_once($componentloc . '/locallib.php');
             EOD,
-            null
-        ];
+                    null
+                ];
 
-        yield [
-            'lib/accesslib.php',
-            <<<'EOD'
+                yield [
+                    'lib/accesslib.php',
+                    <<<'EOD'
             $base = core_component::get_plugin_directory($type, $name);
             include("{$base}/db/subplugins.php");
             EOD,
-            null
-        ];
+                    null
+                ];
 
-        yield [
-            '',
-            <<<'EOD'
+                yield [
+                    '',
+                    <<<'EOD'
             $plugins = \core_component::get_plugin_list('cachestore');
                 if (!array_key_exists($plugin, $plugins)) {
                     throw new \coding_exception('Invalid cache plugin used when trying to create an edit form.');
@@ -154,61 +154,61 @@ class PathResolvingVisitorTest extends TestCase
                     require_once($plugindir.'/addinstanceform.php');
                 }
             EOD,
-            null
+                    null
 
-        ];
+                ];
 
-        yield [
-            'mod/example/lib.php',
-            <<<'EOD'
+                yield [
+                    'mod/example/lib.php',
+                    <<<'EOD'
             foreach (core_component::get_plugin_list('mod') as $plugindir) {
                 require_once($plugindir . '/lib.php');
             }
             EOD,
-            null
+                    null
 
-        ];
+                ];
 
-        yield [
-            'mod/example/lib.php',
-            <<<'EOD'
+                yield [
+                    'mod/example/lib.php',
+                    <<<'EOD'
             $plugins = core_component::get_plugin_list('mod');
             foreach ($plugins as $plugindir) {
                 require_once($plugindir . '/lib.php');
             }
             EOD,
-            null
+                    null
 
-        ];
+                ];
 
-        yield [
-            'mod/example/lib.php',
-            <<<'EOD'
+                yield [
+                    'mod/example/lib.php',
+                    <<<'EOD'
             $plugins = core_component::get_plugin_list('mod');
             require_once($plugins['name'] . '/lib.php');
             EOD,
-            null
+                    null
 
-        ];
+                ];
 
-        yield [
-            'mod/example/lib.php',
-            <<<'EOD'
+                yield [
+                    'mod/example/lib.php',
+                    <<<'EOD'
             $plugins = core_component::get_plugin_list('mod');
             $name = 'name';
             require_once($plugins[$name] . '/lib.php');
             EOD,
-            null
+                    null
 
-        ];
+                ];
 
-    }
+            }
 
     /**
      * @dataProvider coreComponentCheckingProvider
      * @param string $path
      * @param string $code
-     * @param callable $check
+     * @param callable|null $check
      */
     public function testCoreComponentChecking(string $path, string $code, ?callable $check)
     {
@@ -237,7 +237,7 @@ class PathResolvingVisitorTest extends TestCase
         $check($pathNodes);
     }
 
-    public function requireDataProvider(): \Generator
+    public static function requireDataProvider(): \Generator
     {
 
         yield [
@@ -402,6 +402,12 @@ class PathResolvingVisitorTest extends TestCase
             'mod/assign/classes/task/cron_task.php',
             "require_once(\$CFG->dirroot . '/mod/assign/submission/' . \$name . '/locallib.php')",
             '@/mod/assign/submission/{$name}/locallib.php'
+        ];
+
+        yield [
+            'media/player/videojs/classes/plugin.php',
+            "\$langfile = \"{\$CFG->dirroot}/media/player/videojs/videojs/lang/{\$lang}.json\"",
+            '@/media/player/videojs/videojs/lang/{$lang}.json'
         ];
 
         $in = fopen(__DIR__ . '/../fixtures/requires.csv', 'r');

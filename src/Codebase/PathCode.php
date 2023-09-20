@@ -5,6 +5,10 @@ declare(strict_types=1);
 namespace MoodleAnalyse\Codebase;
 
 /**
+ * A representation of a piece of code that contains a path within the Moodle codebase.
+ *
+ * The line and file position properties are within the context of a file but the file is not stored here.
+ * These would normally be used inside a FileAnalysis object.
  * @todo Fix the naming of this class, properties and getters.
  */
 class PathCode
@@ -54,17 +58,7 @@ class PathCode
 
     public function getPathComponent(): ?string
     {
-        $pathComponent = $this->pathComponent;
-        // We have a couple of component names returned by ComponentResolver that are not known by Moodle, so we
-        // rewrite these here.
-        // TODO: Something smells here. We're getting this data from ComponentResolver::resolveComponent() which
-        //       makes a distinction between core_root and undetermined, but then we're throwing it away.
-        /*if ($pathComponent === 'core_lib') {
-            $pathComponent = 'core';
-        } elseif ($pathComponent === 'core_root') {
-            $pathComponent = null;
-        }*/
-        return $pathComponent;
+        return $this->pathComponent;
     }
 
     public function setPathComponent(?string $pathComponent): void

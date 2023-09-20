@@ -18,6 +18,10 @@ use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Finder\Finder;
 use Symfony\Component\Finder\SplFileInfo;
 
+/**
+ * Extract all supported plugins to a directory.
+ * @deprecated This is superseded by ExtractComponentPackages
+ */
 class ExtractAllPlugins extends \Symfony\Component\Console\Command\Command
 {
     const DELETE = 'delete';

@@ -17,6 +17,9 @@ use Symfony\Component\Filesystem\Filesystem;
 use Symfony\Component\Finder\Finder;
 use Symfony\Component\Finder\SplFileInfo;
 
+/**
+ * @deprecated This is superseded by ExtractComponentPackages
+ */
 class PluginExtractor
 {
 
@@ -36,6 +39,8 @@ class PluginExtractor
      * @param string $outputDirectory
      * @return void
      * @throws \Exception
+     *
+     * @deprecated This is superseded by ExtractComponentPackages
      */
     public function extractPlugin(string $moodleDirectory, string $componentName, string $outputDirectory): void
     {

@@ -18,7 +18,7 @@ class CodebasePath
         private string $relativeFilename,
         private string $fileComponent,
         private PathCode $pathCode,
-        private ?PathCode $parentCode
+        private ?PathCode $parentCode = null
     ) {
 
     }

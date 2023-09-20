@@ -23,13 +23,14 @@ use Symfony\Component\Console\Output\OutputInterface;
  *
  * 1. $CFG->dirroot will continue to be available as the root of the Moodle codebase.
  * 2. All core components will continue to be under $CFG->dirroot.
+ *
+ * @deprecated This is superseded by ExtractComponentPackages
  */
 class RewriteForPluginExtraction extends \Symfony\Component\Console\Command\Command
 {
     protected static $defaultDescription = 'Rewrite Moodle codebase to remove reliance on dirroot from links to and from plugin code';
 
     const MOODLE_DIR = 'moodle-dir';
-    private LoggerInterface $logger;
 
     /**
      * @inheritDoc
@@ -52,21 +53,21 @@ class RewriteForPluginExtraction extends \Symfony\Component\Console\Command\Comm
             return Command::FAILURE;
         }
 
-        $this->logger = new ConsoleLogger($output);
+        $logger = new ConsoleLogger($output);
 
-        $rewriteApplier = new RewriteApplier($this->logger);
+        $rewriteApplier = new RewriteApplier($logger);
 
         $codebaseAnalyser = new CodebaseAnalyser($moodleDirectory);
         foreach ($codebaseAnalyser->analyseAll() as $fileAnalysis) {
 
-            $this->logger->debug("Getting rewrites for " . $fileAnalysis->getRelativePath());
+            $logger->debug("Getting rewrites for " . $fileAnalysis->getRelativePath());
 
             $rewrites = $this->getRewrites($fileAnalysis);
             if ($rewrites === []) {
                 continue;
             }
 
-            $this->logger->info("Rewriting " . $fileAnalysis->getRelativePath());
+            $logger->info("Rewriting " . $fileAnalysis->getRelativePath());
 
             $rewriteApplier->applyRewrites($rewrites, $fileAnalysis->getFinderFile());
         }

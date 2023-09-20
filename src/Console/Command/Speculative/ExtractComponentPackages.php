@@ -3,7 +3,6 @@
 namespace MoodleAnalyse\Console\Command\Speculative;
 
 use MoodleAnalyse\Codebase\Analyse\CodebaseAnalyser;
-use MoodleAnalyse\Codebase\Analyse\FileAnalyser;
 use MoodleAnalyse\Codebase\Analyse\Rewrite\FileRewriteAnalysis;
 use MoodleAnalyse\Codebase\Component\ComponentsFinder;
 use MoodleAnalyse\Codebase\ComponentResolver;
@@ -32,6 +31,7 @@ class ExtractComponentPackages extends Command
             ->addArgument('moodle-dir', InputArgument::REQUIRED, 'The directory of the Moodle codebase')
             ->addArgument('output-dir', InputArgument::REQUIRED, 'The parent directory for the components')
             ->addOption('rewrite-log', 'r', InputOption::VALUE_REQUIRED, 'The file to write the rewrite log to', null)
+            ->addOption('single-file', 'f', InputOption::VALUE_REQUIRED, 'The single file to rewrite', null)
             ->addOption('no-copy', null, InputOption::VALUE_NONE, 'Don\'t copy the files, just rewrite them (for testing only)');
     }
 
@@ -46,6 +46,7 @@ class ExtractComponentPackages extends Command
         $outputDir = $input->getArgument('output-dir');
         $rewriteLog = $input->getOption('rewrite-log');
         $noCopy = $input->getOption('no-copy');
+        $singleFile = $input->getOption('single-file');
 
         if ($rewriteLog && is_file($rewriteLog)) {
             unlink($rewriteLog);
@@ -57,6 +58,11 @@ class ExtractComponentPackages extends Command
 
         if (!is_dir($outputDir)) {
             $output->writeln("$outputDir does not exist");
+            return Command::FAILURE;
+        }
+
+        if (!is_null($singleFile) && !is_file($moodleDirectory . '/' . $singleFile)) {
+            $output->writeln("$singleFile does not exist");
             return Command::FAILURE;
         }
 
@@ -180,10 +186,20 @@ class ExtractComponentPackages extends Command
         $cliRoutes = [];
 
         $codebaseAnalyser = new CodebaseAnalyser($moodleDirectory);
-        foreach ($codebaseAnalyser->analyseAll() as $fileAnalysis) {
+        if ($singleFile !== null) {
+            $analysisIterator = $codebaseAnalyser->analyseFile($singleFile);
+        } else {
+            $analysisIterator = $codebaseAnalyser->analyseAll();
+        }
+        foreach ($analysisIterator as $fileAnalysis) {
 
             // On no account rewrite the component.php file.
+            // TODO: Do we need to rewrite the directory separators?
             if ($fileAnalysis->getRelativePath() === 'lib/classes/component.php') {
+                continue;
+            }
+
+            if (!is_null($singleFile) && $fileAnalysis->getRelativePath() !== $singleFile) {
                 continue;
             }
 

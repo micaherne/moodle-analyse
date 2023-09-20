@@ -55,7 +55,7 @@ class ResolvedPathProcessorTest extends TestCase
         $this->assertEquals($expected, $method->invoke($processor, $resolvedInclude));
     }
 
-    public function categoriseTestData(): \Generator
+    public static function categoriseTestData(): \Generator
     {
 
         yield ['@{\DIRECTORY_SEPARATOR}', PathCategory::DirRoot];
@@ -77,7 +77,7 @@ class ResolvedPathProcessorTest extends TestCase
         yield ['@/completion/criteria/{$object}.php', PathCategory::FilenameSubstitution];
     }
 
-    public function toCodeStringTestData(): \Generator
+    public static function toCodeStringTestData(): \Generator
     {
         yield ['@\\', '$CFG->dirroot . \'\\\''];
         yield ['@/{ltrim($observer[\'includefile\'], \'/\')}', '$CFG->dirroot . \'/\' . ltrim($observer[\'includefile\'], \'/\')'];
@@ -97,7 +97,7 @@ class ResolvedPathProcessorTest extends TestCase
         yield ['somedirectory/block_{$blockname}.php', '\'somedirectory/block_\' . $blockname . \'.php\''];
     }
 
-    public function splitResolvedIncludeData(): \Generator
+    public static function splitResolvedIncludeData(): \Generator
     {
         yield ['@/lib/moodlelib.php', ['@', 'lib', 'moodlelib.php']];
         yield ['@/{ltrim($observer[\'includefile\'], \'/\')}', ['@', '{ltrim($observer[\'includefile\'], \'/\')}']];

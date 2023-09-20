@@ -10,6 +10,11 @@ use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Logger\ConsoleLogger;
 use Symfony\Component\Console\Output\OutputInterface;
 
+/**
+ * Extract a plugin to a directory.
+ *
+ * @deprecated This is superseded by ExtractComponentPackages
+ */
 class ExtractPlugin extends Command
 {
     private const MOODLE_DIR = 'moodle-dir';

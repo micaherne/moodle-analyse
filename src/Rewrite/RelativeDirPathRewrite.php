@@ -5,6 +5,13 @@ namespace MoodleAnalyse\Rewrite;
 use MoodleAnalyse\Codebase\CodebasePath;
 use RuntimeException;
 
+/**
+ * Rewrite a path to a component to use a __DIR__ relative path instead of $CFG->dirroot or libdir.
+ *
+ * This simplifies the rewriting of paths within components as there's no real point using
+ * get_component_path() when we know the two files will always be in the same place relative to
+ * each other.
+ */
 class RelativeDirPathRewrite extends Rewrite
 {
 
@@ -26,7 +33,11 @@ class RelativeDirPathRewrite extends Rewrite
         $targetFromRoot = substr($resolvedTarget, strlen($componentPath));
 
         // Must be double quotes as it may contain variables.
-        parent::__construct($pathCode->getPathCodeStartFilePos(), $pathCode->getPathCodeEndFilePos(), '__DIR__ . "/' . self::calculateRelativePath($resolvedFromRoot, $targetFromRoot) . '"');
+        parent::__construct(
+            $pathCode->getPathCodeStartFilePos(),
+            $pathCode->getPathCodeEndFilePos(),
+            '__DIR__ . "/' . self::calculateRelativePath($resolvedFromRoot, $targetFromRoot) . '"'
+        );
     }
 
     public static function calculateRelativePath(string $sourceFilename, string $targetFilename): string

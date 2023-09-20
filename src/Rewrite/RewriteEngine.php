@@ -18,7 +18,9 @@ use PhpParser\ParserFactory;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Finder\SplFileInfo;
 
-
+/**
+ * @deprecated
+ */
 class RewriteEngine
 {
 

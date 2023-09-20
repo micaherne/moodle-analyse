@@ -5,6 +5,9 @@ namespace MoodleAnalyse\Codebase\Analyse\Rewrite;
 use MoodleAnalyse\Codebase\CodebasePath;
 use MoodleAnalyse\Rewrite\Rewrite;
 
+/**
+ * A class to hold the results of analysing a codebase path to determine if it needs to be rewritten.
+ */
 class CodebasePathRewriteAnalysis
 {
 

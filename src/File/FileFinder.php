@@ -28,7 +28,7 @@ class FileFinder
     public function getFileIterator(array $types = ['php'], bool $includeThirdPartyLibs = false): Iterator
     {
         $finder = new Finder();
-        $finder->exclude(['.git']);
+        // Finder ignores git directory by default.
         $finder->in($this->moodleroot);
         if (!$includeThirdPartyLibs) {
             $finder->exclude(['vendor', 'node_modules']);
@@ -65,7 +65,7 @@ class FileFinder
     /**
      * @param array{files: array<string>, dirs: array<string>} $libLocations
      * @param string $parent the relative parent of the directory the third party libs file was in
-     * @return array
+     * @return array{files: array<string>, dirs: array<string>} the same array but with full relative paths from root
      */
     private function makeRelative(array $libLocations, string $parent): array {
         return [

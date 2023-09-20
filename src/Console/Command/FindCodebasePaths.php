@@ -5,24 +5,15 @@ declare(strict_types=1);
 namespace MoodleAnalyse\Console\Command;
 
 use MoodleAnalyse\Codebase\Analyse\CodebaseAnalyser;
-use MoodleAnalyse\Codebase\ComponentResolver;
-use MoodleAnalyse\Codebase\ResolvedPathProcessor;
-use MoodleAnalyse\File\FileFinder;
-use MoodleAnalyse\Visitor\PathFindingVisitor;
-use MoodleAnalyse\Visitor\PathResolvingVisitor;
-use PhpParser\Lexer;
-use PhpParser\Node\Expr;
-use PhpParser\NodeTraverser;
-use PhpParser\NodeVisitor\NameResolver;
-use PhpParser\NodeVisitor\ParentConnectingVisitor;
-use PhpParser\ParserFactory;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Exception\RuntimeException;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Finder\SplFileInfo;
 
+/**
+ * The basic analysis command - produces a CSV of all codebase paths found.
+ */
 class FindCodebasePaths extends Command
 {
     private const MOODLE_DIR = 'moodle-dir';
@@ -92,7 +83,7 @@ class FindCodebasePaths extends Command
                 $row[] = $codebasePath->isAssignedFromPreviousPathVariable() ? "Yes": "No";
 
                 if (!is_null($parentCode) && $parentCode instanceof \MoodleAnalyse\Codebase\PathCodeDirrootWrangle) {
-                    $row[] = 'WRANGLE!!!: ' . $parentCode->getClassification() . ' ' . ($parentCode->getVariableName() ?? '') . ' ' . ($parentCode->getOther() ?? '');
+                    $row[] = 'WRANGLE!!!: ' . $parentCode->getClassification() . ' ' . ($parentCode->getVariableName() ?? '') . ' ' . ($parentCode->getReplacementString() ?? '');
                 } else {
                     $row[] = '';
                 }

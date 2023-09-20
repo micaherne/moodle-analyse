@@ -23,6 +23,11 @@ use PhpParser\ParserFactory;
 use Symfony\Component\Console\Exception\RuntimeException;
 use Symfony\Component\Finder\SplFileInfo;
 
+/**
+ * Analyses a given Moodle file using PHP-Parser.
+ *
+ * Returns a FileAnalysis object containing individual CodebasePath objects for each resolved path.
+ */
 class FileAnalyser
 {
 
@@ -38,6 +43,9 @@ class FileAnalyser
         $lexer = new Lexer(['usedAttributes' => ['startLine', 'endLine', 'startFilePos', 'endFilePos']]);
         $this->parser = (new ParserFactory())->create(ParserFactory::PREFER_PHP7, $lexer);
 
+        // We need to run the path resolving visitor twice. This is because we need to identify the path nodes
+        // before attempting to resolve the paths. The path resolving visitor needs to know in advance which
+        // nodes are within paths so it can annotate them correctly.
         $this->preProcessTraverser = new NodeTraverser();
         $this->preProcessTraverser->addVisitor(new NameResolver());
         $this->preProcessTraverser->addVisitor(new ParentConnectingVisitor());
@@ -120,7 +128,6 @@ class FileAnalyser
 
             $pathCode->setResolvedPath($resolvedInclude);
 
-
             $targetComponent = $this->componentResolver->resolveComponent($resolvedInclude);
             $targetComponentName = null;
             $pathWithinComponent = null;
@@ -168,8 +175,6 @@ class FileAnalyser
                 // Don't hold a reference to the node.
                 unset($parentNode);
             }
-
-            $category = $this->resolvedPathProcessor->categoriseResolvedPath($resolvedInclude);
 
             $fromCoreComponent = !is_null($pathNode->getAttribute(PathResolvingVisitor::FROM_CORE_COMPONENT));
             $assignedFromPathVar = !is_null(

@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace MoodleAnalyse\Codebase;
 
-use Symfony\Component\Finder\SplFileInfo;
-
 use function array_shift;
 use function count;
 use function implode;
@@ -15,6 +13,9 @@ use function substr;
 
 use const PREG_OFFSET_CAPTURE;
 
+/**
+ * A simplistic but just about good enough class for categorising resolved paths.
+ */
 class ResolvedPathProcessor
 {
 
@@ -71,6 +72,9 @@ class ResolvedPathProcessor
      *
      * @param string $resolvedInclude
      * @param string|null $filePath the relative file path
+     *
+     * @todo This was written a long time ago and may not be that great. It's worth checking.
+     *
      */
     public function toCodeString(string $resolvedInclude, ?string $filePath = null): string
     {

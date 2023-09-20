@@ -455,6 +455,9 @@ class PathResolvingVisitor extends NodeVisitorAbstract implements FileAwareInter
                     $currentScope->{self::GET_PLUGIN_LIST_VARS}[$parent->var->name] = self::COMPONENT_ASSIGNMENT;
                 } elseif ($parent instanceof Node\Arg) {
                     // Seems to be mostly array_keys and array_key_exists, which we don't need to care about.
+                    // TODO: I don't understand why I thought we didn't need to concern ourselves with array_keys,
+                    //       as array_keys(core_component::get_plugin_list('mod')) is a common pattern and is
+                    //       quite similar to the foreach case.
                     echo ("what happens here? " . $this->filePath . ':' . $parent->getStartLine() . "\n");
                 } else {
                     // Can be return, e.g. get_plugin_list() in deprecatedlib.php

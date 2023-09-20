@@ -6,22 +6,13 @@ use Exception;
 
 use function simplexml_load_file;
 
+/**
+ * A class to read the thirdpartylibs.xml file in a component directory.
+ */
 class ThirdPartyLibsReader
 {
 
     private const THIRDPARTYLIBS_XML = 'thirdpartylibs.xml';
-
-    /**
-     * @param string $componentDirectory full path to the component directory
-     * @return array{ files: array<string>, dirs: array<string> }
-     */
-    public function getLocationsAbsolute(string $componentDirectory): array {
-        $result = [];
-        foreach ($this->getLocationsRelative($componentDirectory) as $type => $locations) {
-            $result[$type] = array_map(fn($location) => $componentDirectory . '/' . $location, $locations);
-        }
-        return $result;
-    }
 
     /**
      * @param string $componentDirectory full path to the component directory

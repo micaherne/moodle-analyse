@@ -7,7 +7,10 @@ use MoodleAnalyse\Codebase\Analyse\Rewrite\CodebasePathRewriteAnalysis;
 use MoodleAnalyse\Codebase\Analyse\Rewrite\FileRewriteAnalysis;
 use MoodleAnalyse\Codebase\CodebasePath;
 use MoodleAnalyse\Codebase\ComponentResolver;
+use MoodleAnalyse\Codebase\DirrootAnalyser;
 use MoodleAnalyse\Codebase\PathCategory;
+use MoodleAnalyse\Codebase\PathCodeDirrootWrangle;
+use MoodleAnalyse\Rewrite\DirrootWrangleRewrite;
 use MoodleAnalyse\Rewrite\GetComponentPathRewrite;
 use MoodleAnalyse\Rewrite\GetCorePathRewrite;
 use MoodleAnalyse\Rewrite\GetPathFromRelativeRewrite;
@@ -41,7 +44,7 @@ class ExtractComponentPackagesProvider
      */
     public function __construct(
         private ComponentResolver $componentResolver,
-        private LoggerInterface $logger
+        private readonly LoggerInterface $logger
     ) {
     }
 
@@ -82,12 +85,26 @@ class ExtractComponentPackagesProvider
 
         $bothComponentsAreCore = $sourceIsCore && $targetIsCore;
 
-        // Ignore dirroot wrangling.
-        // TODO: Rewrite these where possible.
+        // Rewrite these where possible.
         if ($codebasePath->getPathCategory() === PathCategory::DirRoot) {
-            $result->setExplanation("Dirroot wrangling rewrites not implemented yet");
-            $result->setWorthInvestigating(true);
-            return $result;
+            if ($codebasePath->getParentCode() instanceof PathCodeDirrootWrangle) {
+                /** @var PathCodeDirrootWrangle $wrangle */
+                $wrangle = $codebasePath->getParentCode();
+                $classification = $wrangle->getClassification();
+                if ($classification !== 0 && (($classification & DirrootAnalyser::REPLACE_WITH_STRING) === 0)) {
+                    $rewrite = new DirrootWrangleRewrite($codebasePath);
+                    $result->setRewrite($rewrite);
+                    $result->setExplanation("Rewrite dirroot wrangle");
+                    return $result;
+                } else {
+                    $result->setExplanation("Dirroot wrangling rewrite not implemented yet for this classification");
+                    $result->setWorthInvestigating(true);
+                    return $result;
+                }
+            } else {
+                $this->logger->info("Category is DirRoot but parent code is not PathCodeDirrootWrangle: {$codebasePath->getRelativeFilename()}: {$codebasePath->getPathCode()->getPathCodeStartLine()}");
+            }
+
         }
 
         // Rewrite config.php to use $CFG->dirroot. This will need to be set before running any code
@@ -208,13 +225,6 @@ class ExtractComponentPackagesProvider
 
             // Rewrite root paths to use dirroot and anything else to a get_component_path() call.
             if ($targetIsCore) {
-                // TODO: Major bug - we don't know whether $CFG is available!
-                //       Also we need to potentially add a global $CFG if it's at the top level of a unit test file.
-                //       So it might be better to rewrite these to use get_component_path() as well.
-                //       Although I think there's something wonky with using get_component_path() for plugins that
-                //       are included in the moodle-core root package so that needs checked.
-                // We get the path to the component within the core package and append it to dirroot.
-
                 // If the target component is an actual core one, we use core_component::get_core_path()
                 // to avoid having to ensure that $CFG is in scope. Otherwise (if it's a plugin that's in the
                 // moodle-core package), we just use get_component_path() as normal

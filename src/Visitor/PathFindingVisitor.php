@@ -42,8 +42,18 @@ class PathFindingVisitor extends NodeVisitorAbstract
             $this->findPotentialFilePath($node);
         }
 
-        if ($node instanceof Node\Scalar\MagicConst\Dir || $node instanceof Node\Scalar\MagicConst\File) {
+        if ($node instanceof Node\Scalar\MagicConst\Dir) {
             $this->findPotentialFilePath($node);
+        }
+
+        // We need to be careful with __FILE__. It's only really relevant if it's in a dirname() call.
+        // There are places where we don't want it to be a code path, e.g. if it's part of a dirroot
+        // wrangle such as substr(__FILE__, strlen($CFG->dirroot.'/')
+        if ($node instanceof Node\Scalar\MagicConst\File && $node->getAttribute('parent') instanceof Node\Expr\FuncCall) {
+            $parent = $node->getAttribute('parent');
+            if ($this->isDirnameCall($parent)) {
+                $this->findPotentialFilePath($node);
+            }
         }
 
         return null;
@@ -153,7 +163,7 @@ class PathFindingVisitor extends NodeVisitorAbstract
 
     private function isDirnameCall(Node $function): bool
     {
-        return $function instanceof Node\Expr\FuncCall && $function->name instanceof Node\Name && $function->name->parts[0] === 'dirname';
+        return $function instanceof Node\Expr\FuncCall && $function->name instanceof Node\Name && $function->name->getParts()[0] === 'dirname';
     }
 
     private function markAsPropertyDefinition(Node $relevantParent): void

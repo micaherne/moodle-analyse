@@ -136,7 +136,7 @@ class ComponentResolver
      *       and potentially a better solution for root.
      *
      * @param string $path a relative path to a file or directory
-     * @return array<string, string, string>|null array of [type, name, path within component] or null if it can't be determined
+     * @return array{string, string, string}|null array of [type, name, path within component] or null if it can't be determined
      * @throws \Exception
      */
     public function resolveComponent(string $path): ?array

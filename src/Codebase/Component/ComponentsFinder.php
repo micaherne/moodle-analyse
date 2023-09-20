@@ -2,6 +2,11 @@
 
 namespace MoodleAnalyse\Codebase\Component;
 
+/**
+ * Finds all the components in a Moodle codebase. This is a simplistic implementation of what
+ * core_component does and is intended for analysis where it's not appropriate to try and load
+ * core_component.
+ */
 class ComponentsFinder
 {
 
